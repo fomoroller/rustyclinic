@@ -1,0 +1,22 @@
+[package]
+name = "rustyclinic"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+axum.workspace = true
+clap.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+rustyclinic-api = { path = "../rustyclinic-api" }
+rustyclinic-core = { path = "../rustyclinic-core" }
+rustyclinic-db = { path = "../rustyclinic-db" }
+rustyclinic-services = { path = "../rustyclinic-services" }
+
+[lints]
+workspace = true

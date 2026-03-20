@@ -1,0 +1,16 @@
+[package]
+name = "rustyclinic-clinical"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+chrono.workspace = true
+serde.workspace = true
+uuid.workspace = true
+rustyclinic-core = { path = "../rustyclinic-core" }
+
+[lints]
+workspace = true

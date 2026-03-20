@@ -1,0 +1,48 @@
+[workspace]
+members = [
+    "crates/rustyclinic",
+    "crates/rustyclinic-api",
+    "crates/rustyclinic-auth",
+    "crates/rustyclinic-clinical",
+    "crates/rustyclinic-core",
+    "crates/rustyclinic-db",
+    "crates/rustyclinic-events",
+    "crates/rustyclinic-identity",
+    "crates/rustyclinic-mcp",
+    "crates/rustyclinic-packages",
+    "crates/rustyclinic-projections",
+    "crates/rustyclinic-services",
+    "crates/rustyclinic-web",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2024"
+version = "0.1.0"
+license = "Apache-2.0"
+authors = ["RustyClinic Contributors"]
+repository = "https://example.com/rustyclinic"
+
+[workspace.dependencies]
+anyhow = "1.0.98"
+argon2 = { version = "0.5", features = ["std"] }
+axum = "0.8.6"
+chrono = { version = "0.4.40", features = ["serde"] }
+clap = { version = "4.5.32", features = ["derive"] }
+rusqlite = { version = "0.37.0", features = ["bundled", "column_decltype"] }
+serde = { version = "1.0.219", features = ["derive"] }
+sha2 = "0.10"
+serde_json = "1.0.140"
+thiserror = "2.0.12"
+tokio = { version = "1.44.1", features = ["macros", "net", "rt-multi-thread", "signal", "time"] }
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt", "json"] }
+uuid = { version = "1.16.0", features = ["v7", "serde"] }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+dbg_macro = "deny"
+todo = "deny"
+unwrap_used = "deny"

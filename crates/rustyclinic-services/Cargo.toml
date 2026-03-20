@@ -1,0 +1,24 @@
+[package]
+name = "rustyclinic-services"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+chrono.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+uuid.workspace = true
+rustyclinic-auth = { path = "../rustyclinic-auth" }
+rustyclinic-core = { path = "../rustyclinic-core" }
+rustyclinic-clinical = { path = "../rustyclinic-clinical" }
+rustyclinic-db = { path = "../rustyclinic-db" }
+rustyclinic-events = { path = "../rustyclinic-events" }
+rustyclinic-identity = { path = "../rustyclinic-identity" }
+rustyclinic-projections = { path = "../rustyclinic-projections" }
+
+[lints]
+workspace = true
