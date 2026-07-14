@@ -1,16 +1,16 @@
 <p align="center">
-  <img src="docs/brand/logo/wordmark.svg" width="380" alt="rustyclinic">
+  <img src="docs/brand/logo/lockup.svg" width="460" alt="rustyclinic">
 </p>
 
-# RustyClinic
+# rustyclinic
 
 **An offline-first EMR and health platform for low-resource settings, shipped as a single Rust binary.**
 
-RustyClinic is built for clinics where connectivity and power are unreliable and IT staff are scarce. It runs on a tablet, laptop, Raspberry Pi, or commodity server. Registration, consultations, queueing, dispensing, billing, and reporting all work locally with no internet connection; sync happens when connectivity returns.
+rustyclinic is built for clinics where connectivity and power are unreliable and IT staff are scarce. It runs on a tablet, laptop, Raspberry Pi, or commodity server. Registration, consultations, queueing, dispensing, billing, and reporting all work locally with no internet connection; sync happens when connectivity returns.
 
 Country, program, insurer, terminology, form, and report variation is delivered as signed runtime packages (`.rcpkg`) rather than code forks — one binary, many deployments.
 
-> **Status: pre-release.** RustyClinic is under active development and has not been validated for production clinical use. It is not a certified medical device. Do not use it to manage real patient care yet.
+> **Status: pre-release.** rustyclinic is under active development and has not been validated for production clinical use. It is not a certified medical device. Do not use it to manage real patient care yet.
 
 ## What's inside
 
