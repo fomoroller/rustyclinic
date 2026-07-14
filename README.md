@@ -104,6 +104,13 @@ cargo fmt --check                                  # formatting
 
 `unsafe` code is forbidden across the workspace.
 
+## Contributing
+
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). The
+project uses the [DCO](https://developercertificate.org) (sign commits with
+`git commit -s`); contributors keep their copyright. [`TODOS.md`](TODOS.md)
+lists what's next. Security reports: see [SECURITY.md](SECURITY.md).
+
 ## License
 
 AGPL-3.0-or-later. See [LICENSE](LICENSE). Vendored web assets are covered in
