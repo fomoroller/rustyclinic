@@ -14,7 +14,7 @@ Three commitments underpin it:
 - **Variation is data, not forks.** Country programs, payer rules, forms, terminology, languages, and reports are delivered as signed runtime packages (`.rcpkg`). One binary, every deployment.
 - **AI agents are first-class operators.** Every workflow is exposed through governed interfaces (MCP) with the same permissions, audit trail, and co-sign requirements as human staff — no privileged back doors, no bolted-on assistant. As frontier models become cheap enough to run anywhere, rustyclinic is already built to be operated by them.
 
-Free forever: Apache-2.0, self-hostable end to end, no cloud dependency.
+Free forever: AGPL-3.0, self-hostable end to end, no cloud dependency. The copyleft is deliberate — anyone can deploy, support, and charge for services around rustyclinic, but improvements to the software itself stay open, even when it's run as a hosted service.
 
 > **Status: pre-release.** rustyclinic is under active development and has not been validated for production clinical use. It is not a certified medical device. Do not use it to manage real patient care yet.
 
@@ -106,5 +106,5 @@ cargo fmt --check                                  # formatting
 
 ## License
 
-Apache-2.0. See [LICENSE](LICENSE). Vendored web assets are covered in
+AGPL-3.0-or-later. See [LICENSE](LICENSE). Vendored web assets are covered in
 [`crates/rustyclinic-web/static/LICENSES.md`](crates/rustyclinic-web/static/LICENSES.md).
