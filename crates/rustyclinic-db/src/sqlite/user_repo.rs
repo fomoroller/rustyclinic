@@ -1,9 +1,9 @@
 //! SQLite implementation of UserRepo.
 
 use rusqlite::Connection;
-use uuid::Uuid;
-use rustyclinic_core::error::{AppError, AppResult};
 use rustyclinic_auth::users::{User, UserRepo};
+use rustyclinic_core::error::{AppError, AppResult};
+use uuid::Uuid;
 
 pub struct SqliteUserRepo<'a> {
     conn: &'a Connection,
@@ -17,8 +17,8 @@ impl<'a> SqliteUserRepo<'a> {
 
 impl UserRepo for SqliteUserRepo<'_> {
     fn create(&self, user: &User, password_hash: &str) -> AppResult<()> {
-        let roles_json = serde_json::to_string(&user.roles)
-            .map_err(|e| AppError::Database(e.to_string()))?;
+        let roles_json =
+            serde_json::to_string(&user.roles).map_err(|e| AppError::Database(e.to_string()))?;
 
         self.conn
             .execute(
@@ -55,23 +55,55 @@ impl UserRepo for SqliteUserRepo<'_> {
         }
     }
 
-    fn find_by_username(&self, facility_id: Uuid, username: &str) -> AppResult<Option<(User, String)>> {
+    fn find_by_username(
+        &self,
+        facility_id: Uuid,
+        username: &str,
+    ) -> AppResult<Option<(User, String, Option<String>)>> {
         let result = self.conn.query_row(
-            "SELECT id, facility_id, username, display_name, password_hash, roles, active, created_at, updated_at
+            "SELECT id, facility_id, username, display_name, password_hash, pin_hash, roles, active, created_at, updated_at
              FROM users WHERE facility_id = ?1 AND username = ?2",
             rusqlite::params![facility_id.to_string(), username],
             |row| {
                 let pw_hash: String = row.get(4)?;
+                let pin_hash: Option<String> = row.get(5)?;
                 let user = row_to_user_with_offset(row);
-                Ok((user, pw_hash))
+                Ok((user, pw_hash, pin_hash))
             },
         );
 
         match result {
-            Ok((u, hash)) => Ok(Some((u.map_err(|e| AppError::Database(e.to_string()))?, hash))),
+            Ok((u, hash, pin_hash)) => Ok(Some((
+                u.map_err(|e| AppError::Database(e.to_string()))?,
+                hash,
+                pin_hash,
+            ))),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(AppError::Database(e.to_string())),
         }
+    }
+
+    fn update_pin_hash(&self, user_id: Uuid, pin_hash: &str) -> AppResult<()> {
+        let rows = self
+            .conn
+            .execute(
+                "UPDATE users SET pin_hash = ?1, updated_at = ?2 WHERE id = ?3",
+                rusqlite::params![
+                    pin_hash,
+                    chrono::Utc::now().to_rfc3339(),
+                    user_id.to_string()
+                ],
+            )
+            .map_err(|e| AppError::Database(e.to_string()))?;
+
+        if rows == 0 {
+            return Err(AppError::NotFound {
+                entity: "User",
+                id: user_id,
+            });
+        }
+
+        Ok(())
     }
 }
 
@@ -99,13 +131,12 @@ fn row_to_user(row: &rusqlite::Row) -> Result<User, rusqlite::Error> {
     })
 }
 
-// Same but columns are offset by 1 because password_hash is at index 4
 fn row_to_user_with_offset(row: &rusqlite::Row) -> Result<User, rusqlite::Error> {
     let id_str: String = row.get(0)?;
     let facility_str: String = row.get(1)?;
-    let roles_str: String = row.get(5)?;
-    let created_str: String = row.get(7)?;
-    let updated_str: String = row.get(8)?;
+    let roles_str: String = row.get(6)?;
+    let created_str: String = row.get(8)?;
+    let updated_str: String = row.get(9)?;
     let roles: Vec<String> = serde_json::from_str(&roles_str).unwrap_or_default();
 
     Ok(User {
@@ -114,7 +145,7 @@ fn row_to_user_with_offset(row: &rusqlite::Row) -> Result<User, rusqlite::Error>
         username: row.get(2)?,
         display_name: row.get(3)?,
         roles,
-        active: row.get::<_, i32>(6)? != 0,
+        active: row.get::<_, i32>(7)? != 0,
         created_at: chrono::DateTime::parse_from_rfc3339(&created_str)
             .map(|dt| dt.with_timezone(&chrono::Utc))
             .unwrap_or_else(|_| chrono::Utc::now()),

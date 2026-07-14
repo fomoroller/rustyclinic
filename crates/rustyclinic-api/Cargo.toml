@@ -18,6 +18,7 @@ chrono.workspace = true
 rusqlite.workspace = true
 rustyclinic-core = { path = "../rustyclinic-core" }
 rustyclinic-db = { path = "../rustyclinic-db" }
+rustyclinic-auth = { path = "../rustyclinic-auth" }
 rustyclinic-services = { path = "../rustyclinic-services" }
 
 [lints]

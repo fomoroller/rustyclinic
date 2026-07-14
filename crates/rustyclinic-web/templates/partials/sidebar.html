@@ -1,0 +1,30 @@
+<aside class="sidebar" :class="sidebarOpen && 'open'">
+  <div class="sidebar-header">RustyClinic</div>
+  <nav class="sidebar-nav">
+    <a href="/web/queue" class="nav-item{% if active_nav == "queue" %} active{% endif %}">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 4.5A2.5 2.5 0 014.5 2h11A2.5 2.5 0 0118 4.5v2A2.5 2.5 0 0115.5 9h-11A2.5 2.5 0 012 6.5v-2zm0 9A2.5 2.5 0 014.5 11h11a2.5 2.5 0 012.5 2.5v2a2.5 2.5 0 01-2.5 2.5h-11A2.5 2.5 0 012 15.5v-2z"/></svg>
+      Queue
+    </a>
+    <a href="/web/patients" class="nav-item{% if active_nav == "patients" %} active{% endif %}">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/></svg>
+      Patients
+    </a>
+    <a href="/web/patients/register" class="nav-item{% if active_nav == "register" %} active{% endif %}">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+      Register
+    </a>
+    <a href="/web/lab" class="nav-item{% if active_nav == "lab" %} active{% endif %}">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7 2a1 1 0 00-.707 1.707L7 4.414V8l-4.243 4.243A2 2 0 004.172 16h11.656a2 2 0 001.414-3.414L13 8.172V4.414l.707-.707A1 1 0 0013 2H7z" clip-rule="evenodd"/></svg>
+      Lab
+    </a>
+    <a href="/web/pharmacy" class="nav-item{% if active_nav == "pharmacy" %} active{% endif %}">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/></svg>
+      Pharmacy
+    </a>
+    <a href="/web/sync" class="nav-item{% if active_nav == "sync" %} active{% endif %}">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path d="M4.5 10a5.5 5.5 0 019.39-3.89l.86.86V4.5a1 1 0 112 0V9a1 1 0 01-1 1h-4.5a1 1 0 110-2h2.2l-.98-.98A3.5 3.5 0 006 10a1 1 0 11-2 0zm11 0a1 1 0 112 0 5.5 5.5 0 01-9.39 3.89l-.86-.86v2.47a1 1 0 11-2 0V11a1 1 0 011-1h4.5a1 1 0 110 2h-2.2l.98.98A3.5 3.5 0 0015.5 10z"/></svg>
+      Sync
+    </a>
+  </nav>
+  <div class="sidebar-footer">RustyClinic v0.1.0</div>
+</aside>

@@ -14,13 +14,18 @@
 //!                         └──▶ revoked
 //! ```
 
+pub mod builder;
+pub mod format;
+pub mod reader;
+pub mod signing;
+
 use chrono::{DateTime, NaiveDate, Utc};
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 use rustyclinic_core::error::{AppError, AppResult};
 use rustyclinic_core::state_machine::StateMachine;
 use rustyclinic_core::types::ActorContext;
+use serde::{Deserialize, Serialize};
 use std::fmt;
+use uuid::Uuid;
 
 /// Package types delivered through the registry.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -35,6 +40,37 @@ pub enum PackageType {
     Model,
 }
 
+impl PackageType {
+    pub fn parse(value: &str) -> Option<Self> {
+        match value {
+            "deployment" => Some(Self::Deployment),
+            "program" => Some(Self::Program),
+            "payer" => Some(Self::Payer),
+            "form" => Some(Self::Form),
+            "terminology" => Some(Self::Terminology),
+            "report" => Some(Self::Report),
+            "integration" => Some(Self::Integration),
+            "model" => Some(Self::Model),
+            _ => None,
+        }
+    }
+}
+
+impl fmt::Display for PackageType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Deployment => write!(f, "deployment"),
+            Self::Program => write!(f, "program"),
+            Self::Payer => write!(f, "payer"),
+            Self::Form => write!(f, "form"),
+            Self::Terminology => write!(f, "terminology"),
+            Self::Report => write!(f, "report"),
+            Self::Integration => write!(f, "integration"),
+            Self::Model => write!(f, "model"),
+        }
+    }
+}
+
 /// Package installation status.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PackageStatus {
@@ -44,6 +80,20 @@ pub enum PackageStatus {
     Activated,
     RolledBack,
     Revoked,
+}
+
+impl PackageStatus {
+    pub fn parse(value: &str) -> Option<Self> {
+        match value {
+            "uploaded" => Some(Self::Uploaded),
+            "verified" => Some(Self::Verified),
+            "staged" => Some(Self::Staged),
+            "activated" => Some(Self::Activated),
+            "rolled_back" => Some(Self::RolledBack),
+            "revoked" => Some(Self::Revoked),
+            _ => None,
+        }
+    }
 }
 
 impl fmt::Display for PackageStatus {
@@ -140,7 +190,9 @@ impl StateMachine for InstalledPackage {
             PackageStatus::Uploaded => vec![PackageTransition::Verify],
             PackageStatus::Verified => vec![PackageTransition::Stage, PackageTransition::Revoke],
             PackageStatus::Staged => vec![PackageTransition::Activate, PackageTransition::Revoke],
-            PackageStatus::Activated => vec![PackageTransition::Rollback, PackageTransition::Revoke],
+            PackageStatus::Activated => {
+                vec![PackageTransition::Rollback, PackageTransition::Revoke]
+            }
             PackageStatus::RolledBack => vec![PackageTransition::Stage],
             PackageStatus::Revoked => vec![],
         }
@@ -189,10 +241,8 @@ pub fn resolve_active_packages(
             p.status == PackageStatus::Activated
                 && p.manifest
                     .effective_start
-                    .map_or(true, |s| effective_date >= s)
-                && p.manifest
-                    .effective_end
-                    .map_or(true, |e| effective_date <= e)
+                    .is_none_or(|s| effective_date >= s)
+                && p.manifest.effective_end.is_none_or(|e| effective_date <= e)
         })
         .collect()
 }
@@ -281,13 +331,16 @@ mod tests {
         let actor = test_actor();
         let mut pkg = test_package(actor.facility_id);
 
-        pkg.apply_transition(PackageTransition::Verify, &actor).expect("verify");
+        pkg.apply_transition(PackageTransition::Verify, &actor)
+            .expect("verify");
         assert_eq!(pkg.status, PackageStatus::Verified);
 
-        pkg.apply_transition(PackageTransition::Stage, &actor).expect("stage");
+        pkg.apply_transition(PackageTransition::Stage, &actor)
+            .expect("stage");
         assert_eq!(pkg.status, PackageStatus::Staged);
 
-        pkg.apply_transition(PackageTransition::Activate, &actor).expect("activate");
+        pkg.apply_transition(PackageTransition::Activate, &actor)
+            .expect("activate");
         assert_eq!(pkg.status, PackageStatus::Activated);
         assert!(pkg.activated_at.is_some());
     }
@@ -297,14 +350,19 @@ mod tests {
         let actor = test_actor();
         let mut pkg = test_package(actor.facility_id);
 
-        pkg.apply_transition(PackageTransition::Verify, &actor).expect("verify");
-        pkg.apply_transition(PackageTransition::Stage, &actor).expect("stage");
-        pkg.apply_transition(PackageTransition::Activate, &actor).expect("activate");
-        pkg.apply_transition(PackageTransition::Rollback, &actor).expect("rollback");
+        pkg.apply_transition(PackageTransition::Verify, &actor)
+            .expect("verify");
+        pkg.apply_transition(PackageTransition::Stage, &actor)
+            .expect("stage");
+        pkg.apply_transition(PackageTransition::Activate, &actor)
+            .expect("activate");
+        pkg.apply_transition(PackageTransition::Rollback, &actor)
+            .expect("rollback");
         assert_eq!(pkg.status, PackageStatus::RolledBack);
 
         // Can re-stage after rollback
-        pkg.apply_transition(PackageTransition::Stage, &actor).expect("re-stage");
+        pkg.apply_transition(PackageTransition::Stage, &actor)
+            .expect("re-stage");
         assert_eq!(pkg.status, PackageStatus::Staged);
     }
 
@@ -313,8 +371,10 @@ mod tests {
         let actor = test_actor();
         let mut pkg = test_package(actor.facility_id);
 
-        pkg.apply_transition(PackageTransition::Verify, &actor).expect("verify");
-        pkg.apply_transition(PackageTransition::Revoke, &actor).expect("revoke");
+        pkg.apply_transition(PackageTransition::Verify, &actor)
+            .expect("verify");
+        pkg.apply_transition(PackageTransition::Revoke, &actor)
+            .expect("revoke");
         assert_eq!(pkg.status, PackageStatus::Revoked);
         assert!(pkg.allowed_transitions(&actor).is_empty());
     }
@@ -354,5 +414,323 @@ mod tests {
         let packages = [pkg1, pkg2];
         let active = resolve_active_packages(&packages, today);
         assert_eq!(active.len(), 1);
+    }
+
+    // ---- Package format tests ----
+
+    use crate::builder::PackageBuilder;
+    use crate::reader::PackageReader;
+    use crate::signing;
+
+    fn sample_form_json(id: &str) -> String {
+        format!(
+            r#"{{
+                "id": "{id}",
+                "version": "1.0.0",
+                "title": "Test Form",
+                "items": []
+            }}"#
+        )
+    }
+
+    fn sample_report_json(id: &str) -> String {
+        format!(
+            r#"{{
+                "id": "{id}",
+                "title": "{id}",
+                "query": "SELECT 1"
+            }}"#
+        )
+    }
+
+    #[test]
+    fn test_build_and_read_package() {
+        let manifest = test_manifest();
+        let mut builder = PackageBuilder::new(manifest.clone());
+        builder
+            .add_form(&sample_form_json("anc-visit"))
+            .expect("add form");
+
+        let bytes = builder.build().expect("build");
+        let reader = PackageReader::open(&bytes).expect("open");
+
+        assert_eq!(reader.header().manifest.package_id, manifest.package_id);
+        assert_eq!(reader.header().manifest.version, manifest.version);
+        // manifest.json + forms/anc-visit.json
+        assert_eq!(reader.list_files().len(), 2);
+    }
+
+    #[test]
+    fn test_sign_and_verify() {
+        let kp = signing::generate_keypair();
+        let manifest = test_manifest();
+        let mut builder = PackageBuilder::new(manifest);
+        builder
+            .add_form(&sample_form_json("test-form"))
+            .expect("add form");
+
+        let bytes = builder.build_signed(&kp.signing_key).expect("build signed");
+        let reader = PackageReader::open(&bytes).expect("open");
+
+        assert!(reader.verify_signature(&kp.verifying_key).expect("verify"));
+    }
+
+    #[test]
+    fn test_tampered_payload_fails_signature() {
+        let kp = signing::generate_keypair();
+        let manifest = test_manifest();
+        let builder = PackageBuilder::new(manifest);
+
+        let mut bytes = builder.build_signed(&kp.signing_key).expect("build signed");
+
+        // Tamper with a byte in the payload area (well past header + signature).
+        let tamper_idx = bytes.len() - 40;
+        bytes[tamper_idx] ^= 0xFF;
+
+        // Re-open — may fail to decompress, which is also correct rejection.
+        // If it does parse, checksums should fail.
+        if let Ok(reader) = PackageReader::open(&bytes) {
+            let checksums_ok = reader.verify_checksums().unwrap_or(false);
+            assert!(
+                !checksums_ok,
+                "tampered payload should fail checksum verification"
+            );
+        }
+    }
+
+    #[test]
+    fn test_tampered_payload_fails_checksum() {
+        let manifest = test_manifest();
+        let mut builder = PackageBuilder::new(manifest);
+        builder
+            .add_form(&sample_form_json("form-a"))
+            .expect("add form");
+
+        let mut bytes = builder.build().expect("build");
+
+        // Tamper with the stored checksum (last 32 bytes).
+        let len = bytes.len();
+        bytes[len - 1] ^= 0xFF;
+
+        let reader = PackageReader::open(&bytes).expect("open");
+        let ok = reader.verify_checksums().expect("verify");
+        assert!(!ok, "tampered checksum should fail verification");
+    }
+
+    #[test]
+    fn test_empty_package_manifest_only() {
+        let manifest = test_manifest();
+        let builder = PackageBuilder::new(manifest.clone());
+
+        let bytes = builder.build().expect("build");
+        let reader = PackageReader::open(&bytes).expect("open");
+
+        assert_eq!(reader.header().manifest.package_id, manifest.package_id);
+        // Only manifest.json
+        assert_eq!(reader.list_files().len(), 1);
+        assert_eq!(reader.list_files()[0].path, "manifest.json");
+    }
+
+    #[test]
+    fn test_package_with_multiple_forms() {
+        let manifest = test_manifest();
+        let mut builder = PackageBuilder::new(manifest);
+        builder
+            .add_form(&sample_form_json("form-a"))
+            .expect("add form a");
+        builder
+            .add_form(&sample_form_json("form-b"))
+            .expect("add form b");
+        builder
+            .add_form(&sample_form_json("form-c"))
+            .expect("add form c");
+
+        let bytes = builder.build().expect("build");
+        let reader = PackageReader::open(&bytes).expect("open");
+
+        // manifest.json + 3 forms
+        assert_eq!(reader.list_files().len(), 4);
+
+        let forms = reader.extract_forms().expect("extract forms");
+        assert_eq!(forms.len(), 3);
+
+        let form_ids: Vec<&str> = forms.iter().map(|(id, _)| id.as_str()).collect();
+        assert!(form_ids.contains(&"form-a"));
+        assert!(form_ids.contains(&"form-b"));
+        assert!(form_ids.contains(&"form-c"));
+    }
+
+    #[test]
+    fn test_round_trip_full() {
+        let kp = signing::generate_keypair();
+        let manifest = test_manifest();
+        let form_json = sample_form_json("anc-visit");
+
+        let mut builder = PackageBuilder::new(manifest.clone());
+        builder.add_form(&form_json).expect("add form");
+
+        let bytes = builder.build_signed(&kp.signing_key).expect("build");
+        let reader = PackageReader::open(&bytes).expect("open");
+
+        // Verify header.
+        assert_eq!(reader.header().manifest.package_id, "rw-deployment");
+        assert_eq!(reader.header().entries.len(), 2);
+
+        // Verify signature.
+        assert!(
+            reader
+                .verify_signature(&kp.verifying_key)
+                .expect("verify sig")
+        );
+
+        // Verify checksums.
+        assert!(reader.verify_checksums().expect("verify checksums"));
+
+        // Extract forms and validate they parse.
+        let forms = reader.extract_forms().expect("extract forms");
+        assert_eq!(forms.len(), 1);
+        assert_eq!(forms[0].0, "anc-visit");
+
+        // Verify the form JSON parses back.
+        let parsed: serde_json::Value = serde_json::from_str(&forms[0].1).expect("parse form JSON");
+        assert_eq!(parsed["id"].as_str(), Some("anc-visit"));
+
+        // Read manifest.json directly.
+        let manifest_bytes = reader.read_file("manifest.json").expect("read manifest");
+        let read_manifest: PackageManifest =
+            serde_json::from_slice(&manifest_bytes).expect("parse manifest");
+        assert_eq!(read_manifest.package_id, manifest.package_id);
+    }
+
+    #[test]
+    fn test_extracts_all_phase4_payload_types_deterministically() {
+        let manifest = test_manifest();
+        let mut builder = PackageBuilder::new(manifest);
+
+        builder
+            .add_form(&sample_form_json("z-form"))
+            .expect("add form z");
+        builder
+            .add_form(&sample_form_json("a-form"))
+            .expect("add form a");
+        builder.add_file(
+            "reports/z-report.json",
+            sample_report_json("z-report").into_bytes(),
+        );
+        builder.add_file(
+            "reports/a-report.json",
+            sample_report_json("a-report").into_bytes(),
+        );
+        builder.add_file(
+            "terminology/z-codes.json",
+            br#"{"system":"ICD-10","version":"z"}"#.to_vec(),
+        );
+        builder.add_file(
+            "terminology/a-codes.json",
+            br#"{"system":"ICD-10","version":"a"}"#.to_vec(),
+        );
+        builder.add_file(
+            "deployment/settings.json",
+            br#"{"locale":"rw","timezone":"Africa/Kigali"}"#.to_vec(),
+        );
+
+        let bytes = builder.build().expect("build");
+        let reader = PackageReader::open(&bytes).expect("open");
+
+        let form_ids: Vec<String> = reader
+            .extract_forms()
+            .expect("extract forms")
+            .into_iter()
+            .map(|(id, _)| id)
+            .collect();
+        assert_eq!(form_ids, vec!["a-form".to_string(), "z-form".to_string()]);
+
+        let report_ids: Vec<String> = reader
+            .extract_reports()
+            .expect("extract reports")
+            .into_iter()
+            .map(|(id, _)| id)
+            .collect();
+        assert_eq!(
+            report_ids,
+            vec!["a-report".to_string(), "z-report".to_string()]
+        );
+
+        let terminology_names: Vec<String> = reader
+            .extract_terminology_artifacts()
+            .expect("extract terminology")
+            .into_iter()
+            .map(|(name, _)| name)
+            .collect();
+        assert_eq!(
+            terminology_names,
+            vec!["a-codes".to_string(), "z-codes".to_string()]
+        );
+
+        let deployment_settings = reader
+            .extract_deployment_settings()
+            .expect("extract deployment settings")
+            .expect("settings should exist");
+        let settings_json: serde_json::Value =
+            serde_json::from_str(&deployment_settings).expect("parse settings json");
+        assert_eq!(settings_json["locale"], "rw");
+    }
+
+    #[test]
+    fn test_extract_forms_rejects_id_mismatch() {
+        let manifest = test_manifest();
+        let mut builder = PackageBuilder::new(manifest);
+        builder.add_file(
+            "forms/intake.json",
+            br#"{"id":"triage","version":"1.0.0"}"#.to_vec(),
+        );
+
+        let bytes = builder.build().expect("build");
+        let reader = PackageReader::open(&bytes).expect("open");
+
+        let err = reader.extract_forms().expect_err("id mismatch must fail");
+        assert!(
+            format!("{err}").contains("form id mismatch"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn test_extract_reports_rejects_non_json_extension() {
+        let manifest = test_manifest();
+        let mut builder = PackageBuilder::new(manifest);
+        builder.add_file("reports/weekly.sql", b"SELECT * FROM visits".to_vec());
+
+        let bytes = builder.build().expect("build");
+        let reader = PackageReader::open(&bytes).expect("open");
+
+        let err = reader
+            .extract_reports()
+            .expect_err("non-json report path must fail");
+        assert!(
+            format!("{err}").contains("expected .json extension"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn test_extract_deployment_settings_rejects_unsupported_path() {
+        let manifest = test_manifest();
+        let mut builder = PackageBuilder::new(manifest);
+        builder.add_file(
+            "deployment/feature-flags.json",
+            br#"{"newFeature":true}"#.to_vec(),
+        );
+
+        let bytes = builder.build().expect("build");
+        let reader = PackageReader::open(&bytes).expect("open");
+
+        let err = reader
+            .extract_deployment_settings()
+            .expect_err("unsupported deployment path must fail");
+        assert!(
+            format!("{err}").contains("unsupported deployment payload path"),
+            "unexpected error: {err}"
+        );
     }
 }

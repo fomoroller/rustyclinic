@@ -15,14 +15,15 @@
 
 use chrono::Utc;
 use rusqlite::Connection;
-use rustyclinic_core::types::{new_id, ActorContext};
-use rustyclinic_events::{AuditEntry, OutboxEvent, OpLogEntry};
+use rustyclinic_core::error::{AppError, AppResult};
+use rustyclinic_core::types::{ActorContext, new_id};
+use rustyclinic_events::{AuditEntry, OpLogEntry, OutboxEvent};
 use serde_json::Value as JsonValue;
 use sha2::{Digest, Sha256};
 
 /// Captures side-effect records to be committed alongside domain writes.
 pub struct UnitOfWork<'a> {
-    conn: &'a Connection,
+    tx: rusqlite::Transaction<'a>,
     audit_entries: Vec<AuditEntry>,
     outbox_events: Vec<OutboxEvent>,
     op_log_entries: Vec<OpLogEntry>,
@@ -30,19 +31,27 @@ pub struct UnitOfWork<'a> {
 }
 
 impl<'a> UnitOfWork<'a> {
-    pub fn new(conn: &'a Connection) -> Self {
-        Self {
-            conn,
+    pub fn try_new(conn: &'a Connection) -> AppResult<Self> {
+        let tx = conn
+            .unchecked_transaction()
+            .map_err(|e| AppError::Database(format!("failed to begin transaction: {e}")))?;
+
+        Ok(Self {
+            tx,
             audit_entries: Vec::new(),
             outbox_events: Vec::new(),
             op_log_entries: Vec::new(),
             idempotency: None,
-        }
+        })
+    }
+
+    pub fn new(conn: &'a Connection) -> Self {
+        Self::try_new(conn).expect("UnitOfWork::try_new should succeed")
     }
 
     /// Access the connection for domain writes within the transaction.
     pub fn conn(&self) -> &Connection {
-        self.conn
+        &self.tx
     }
 
     /// Record an idempotency key and its response for replay on retry.
@@ -74,7 +83,7 @@ impl<'a> UnitOfWork<'a> {
             aggregate_type: aggregate_type.to_string(),
             aggregate_id,
             payload,
-            prev_hash: Vec::new(), // computed at commit
+            prev_hash: Vec::new(),  // computed at commit
             entry_hash: Vec::new(), // computed at commit
         });
     }
@@ -118,19 +127,18 @@ impl<'a> UnitOfWork<'a> {
             aggregate_type: aggregate_type.to_string(),
             aggregate_id,
             payload,
-            prev_hash: Vec::new(), // computed at commit
+            prev_hash: Vec::new(),  // computed at commit
             entry_hash: Vec::new(), // computed at commit
         });
     }
 
     /// Commit all pending records in a single transaction.
     /// Domain writes should already have been executed on self.conn.
-    pub fn commit(mut self) -> Result<(), String> {
-        let tx = self.conn.unchecked_transaction()
-            .map_err(|e| format!("failed to begin transaction: {e}"))?;
+    pub fn commit(mut self) -> AppResult<()> {
+        let tx = &self.tx;
 
         // Compute audit hash chain
-        let last_audit_hash = self.get_last_audit_hash(&tx)?;
+        let last_audit_hash = self.get_last_audit_hash(tx)?;
         let mut prev = last_audit_hash;
         for entry in &mut self.audit_entries {
             entry.prev_hash = prev.clone();
@@ -153,7 +161,8 @@ impl<'a> UnitOfWork<'a> {
                     entry.prev_hash,
                     entry.entry_hash,
                 ],
-            ).map_err(|e| format!("audit insert failed: {e}"))?;
+            )
+            .map_err(|e| AppError::Database(format!("audit insert failed: {e}")))?;
         }
 
         // Write outbox events
@@ -170,12 +179,13 @@ impl<'a> UnitOfWork<'a> {
                     event.payload.to_string(),
                     event.created_at.to_rfc3339(),
                 ],
-            ).map_err(|e| format!("outbox insert failed: {e}"))?;
+            )
+            .map_err(|e| AppError::Database(format!("outbox insert failed: {e}")))?;
         }
 
         // Write op-log entries with sequence numbers
-        let last_seq = self.get_last_op_sequence(&tx)?;
-        let last_op_hash = self.get_last_op_hash(&tx)?;
+        let last_seq = self.get_last_op_sequence(tx)?;
+        let last_op_hash = self.get_last_op_hash(tx)?;
         let mut seq = last_seq;
         let mut op_prev = last_op_hash;
         for entry in &mut self.op_log_entries {
@@ -201,20 +211,22 @@ impl<'a> UnitOfWork<'a> {
                     entry.prev_hash,
                     entry.entry_hash,
                 ],
-            ).map_err(|e| format!("op_log insert failed: {e}"))?;
+            )
+            .map_err(|e| AppError::Database(format!("op_log insert failed: {e}")))?;
         }
 
         // Write idempotency record if present
         if let Some((facility_id, key, response)) = &self.idempotency {
-            super::idempotency::store_idempotency(&tx, *facility_id, key, response)
-                .map_err(|e| format!("idempotency store failed: {e}"))?;
+            super::idempotency::store_idempotency(tx, *facility_id, key, response)?;
         }
 
-        tx.commit().map_err(|e| format!("commit failed: {e}"))?;
+        self.tx
+            .commit()
+            .map_err(|e| AppError::Database(format!("commit failed: {e}")))?;
         Ok(())
     }
 
-    fn get_last_audit_hash(&self, conn: &Connection) -> Result<Vec<u8>, String> {
+    fn get_last_audit_hash(&self, conn: &Connection) -> AppResult<Vec<u8>> {
         let result: Result<Vec<u8>, _> = conn.query_row(
             "SELECT entry_hash FROM audit_log ORDER BY rowid DESC LIMIT 1",
             [],
@@ -223,16 +235,15 @@ impl<'a> UnitOfWork<'a> {
         Ok(result.unwrap_or_default())
     }
 
-    fn get_last_op_sequence(&self, conn: &Connection) -> Result<u64, String> {
-        let result: Result<u64, _> = conn.query_row(
-            "SELECT COALESCE(MAX(sequence), 0) FROM op_log",
-            [],
-            |row| row.get(0),
-        );
+    fn get_last_op_sequence(&self, conn: &Connection) -> AppResult<u64> {
+        let result: Result<u64, _> =
+            conn.query_row("SELECT COALESCE(MAX(sequence), 0) FROM op_log", [], |row| {
+                row.get(0)
+            });
         Ok(result.unwrap_or(0))
     }
 
-    fn get_last_op_hash(&self, conn: &Connection) -> Result<Vec<u8>, String> {
+    fn get_last_op_hash(&self, conn: &Connection) -> AppResult<Vec<u8>> {
         let result: Result<Vec<u8>, _> = conn.query_row(
             "SELECT entry_hash FROM op_log ORDER BY sequence DESC LIMIT 1",
             [],

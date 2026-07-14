@@ -3,11 +3,11 @@
 //! Full canonical write flow: domain row + audit + outbox + op-log in one transaction.
 
 use chrono::Utc;
-use uuid::Uuid;
 use rustyclinic_core::error::AppResult;
-use rustyclinic_core::types::{new_id, ActorContext, Sex};
-use rustyclinic_identity::{Patient, PatientRepo};
+use rustyclinic_core::types::{ActorContext, Sex, new_id};
 use rustyclinic_db::sqlite::unit_of_work::UnitOfWork;
+use rustyclinic_identity::{Patient, PatientRepo};
+use uuid::Uuid;
 
 /// Input for patient registration.
 pub struct RegisterPatientInput {

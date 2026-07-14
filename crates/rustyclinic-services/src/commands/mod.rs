@@ -1,6 +1,31 @@
 //! Domain commands — one module per command.
 
+pub mod check_eligibility;
+pub mod complete_encounter;
+pub mod complete_lab_order;
+pub mod create_admission;
+pub mod create_claim;
+pub mod create_encounter;
+pub mod create_lab_order;
+pub mod create_prescription;
+pub mod create_referral;
 pub mod create_user;
+pub mod dispense_prescription;
 pub mod enqueue_patient;
+pub mod enroll_program;
+pub mod grant_waiver;
+pub mod install_package;
+pub mod lock_session;
 pub mod login;
+pub mod record_payment;
 pub mod register_patient;
+pub mod transition_admission;
+pub mod transition_claim;
+pub mod transition_dispense;
+pub mod transition_enrollment;
+pub mod transition_lab;
+pub mod transition_package;
+pub mod transition_queue;
+pub mod transition_referral;
+pub mod unlock_session;
+pub mod update_facility_setting;

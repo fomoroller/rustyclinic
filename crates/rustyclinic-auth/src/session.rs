@@ -11,9 +11,9 @@
 //! ```
 
 use chrono::{DateTime, Duration, Utc};
+use rustyclinic_core::types::{ActorContext, new_id};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use rustyclinic_core::types::{new_id, ActorContext};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SessionState {
@@ -132,14 +132,26 @@ mod tests {
 
     #[test]
     fn test_new_session_is_active() {
-        let s = Session::new(new_id(), new_id(), new_id(), vec!["nurse".into()], "password");
+        let s = Session::new(
+            new_id(),
+            new_id(),
+            new_id(),
+            vec!["nurse".into()],
+            "password",
+        );
         assert!(s.is_valid());
         assert_eq!(s.state, SessionState::Active);
     }
 
     #[test]
     fn test_lock_and_unlock() {
-        let mut s = Session::new(new_id(), new_id(), new_id(), vec!["nurse".into()], "password");
+        let mut s = Session::new(
+            new_id(),
+            new_id(),
+            new_id(),
+            vec!["nurse".into()],
+            "password",
+        );
         s.lock();
         assert_eq!(s.state, SessionState::Locked);
         assert!(!s.is_valid());

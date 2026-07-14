@@ -1,0 +1,133 @@
+{#
+  Print base template (Phase 2 print slice)
+
+  Usage:
+    {% extends "base_print.html" %}
+
+  Expectations:
+  - No app shell (no sidebar/session bar).
+  - Provide a `.print-actions` region (hidden when printing).
+  - Provide a `{% block content %}` region for printable content.
+  - Keep CSS minimal and monochrome-safe in print.
+#}
+
+{% extends "base.html" %}
+
+{% block title %}Print — RustyClinic{% endblock %}
+
+{% block head %}
+  <style>
+    /* ===== Print base layout (screen) ===== */
+    html { background: var(--bg); color: var(--text); }
+
+    body.print-body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .print-actions {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 16px;
+    }
+
+    .print-actions-inner {
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .print-content {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+
+    /* ===== Print defaults ===== */
+    .print-content h1 { margin: 0 0 8px 0; }
+    .print-content h2 { margin: 16px 0 8px 0; }
+    .print-content h3 { margin: 12px 0 8px 0; }
+    .print-content p { margin: 0 0 8px 0; }
+
+    .print-content .text-muted { color: var(--text-secondary); }
+    .print-content .tabular { font-variant-numeric: tabular-nums; }
+
+    .print-content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8px 0 0 0;
+    }
+    .print-content th,
+    .print-content td {
+      text-align: left;
+      vertical-align: top;
+      padding: 8px;
+      border: 1px solid var(--border);
+    }
+    .print-content th { font-weight: 600; }
+
+    /* A simple “card” container suitable for patient cards/slips */
+    .print-content .card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px;
+    }
+    .print-content .section-label {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+
+    /* ===== Print media ===== */
+    @page { margin: 12mm; }
+
+    @media print {
+      .print-actions { display: none !important; }
+      .no-print { display: none !important; }
+
+      html, body, body.print-body {
+        background: #fff !important;
+        color: #000 !important;
+      }
+
+      .print-content {
+        max-width: none;
+        padding: 0;
+      }
+
+      a { color: inherit; text-decoration: none; }
+
+      /* Keep table headers on each page; avoid awkward splits when possible */
+      thead { display: table-header-group; }
+      tr { break-inside: avoid; }
+      th, td { border-color: #000 !important; }
+
+      /* Avoid low-contrast “muted” copy in black-and-white printing */
+      .print-content .text-muted { color: #000 !important; }
+    }
+  </style>
+{% endblock %}
+
+{% block body_attrs %}class="print-body"{% endblock %}
+
+{% block body %}
+  <div class="print-actions">
+    <div class="print-actions-inner">
+      {% block print_actions %}{% endblock %}
+    </div>
+  </div>
+
+  <main class="print-content">
+    {% block content %}{% endblock %}
+  </main>
+{% endblock %}

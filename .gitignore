@@ -1,4 +1,7 @@
 /target
 *.db
+*.db-shm
+*.db-wal
+backups/
 .DS_Store
 .gstack/

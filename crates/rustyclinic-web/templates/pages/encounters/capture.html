@@ -1,0 +1,287 @@
+{% extends "base_app.html" %}
+
+{% block title %}Encounter — {{ patient_name }} — RustyClinic{% endblock %}
+
+{% block head %}
+<script>
+(() => {
+  if (window.__rcTerminologySearchV1) return;
+  window.__rcTerminologySearchV1 = true;
+
+  const debounceTimers = new WeakMap();
+  const abortControllers = new WeakMap();
+
+  function closestWidget(el) {
+    return el && el.closest ? el.closest('[data-terminology-search]') : null;
+  }
+
+  function getWidgetEls(widget) {
+    const input = widget.querySelector('[data-terminology-input]');
+    const panel = widget.querySelector('[data-terminology-panel]');
+    const system = widget.querySelector('[data-terminology-system]');
+    const code = widget.querySelector('[data-terminology-code]');
+    const display = widget.querySelector('[data-terminology-display]');
+    return { input, panel, system, code, display };
+  }
+
+  function setHiddenInput(el, value) {
+    if (!el) return;
+    el.value = value || '';
+  }
+
+  function hidePanel(panel) {
+    if (!panel) return;
+    panel.classList.add('hidden');
+    panel.innerHTML = '';
+  }
+
+  function showPanel(panel) {
+    if (!panel) return;
+    panel.classList.remove('hidden');
+  }
+
+  function setStatus(panel, text) {
+    if (!panel) return;
+    panel.innerHTML = '';
+    const msg = document.createElement('div');
+    msg.className = 'p-sm text-sm text-secondary';
+    msg.textContent = text;
+    panel.appendChild(msg);
+  }
+
+  function renderResults(panel, results, onPick) {
+    panel.innerHTML = '';
+    const wrap = document.createElement('div');
+    wrap.className = 'p-sm flex flex-col gap-xs';
+
+    for (const concept of results) {
+      const coding = concept && concept.coding ? concept.coding : null;
+      if (!coding) continue;
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'session-item w-full';
+
+      const left = document.createElement('div');
+      left.className = 'flex-1';
+
+      const title = document.createElement('div');
+      title.className = 'font-600 text-sm';
+      title.textContent = coding.display || '';
+
+      const meta = document.createElement('div');
+      meta.className = 'text-xs text-secondary tabular truncate';
+      meta.textContent = coding.code ? `${coding.code}` : '';
+
+      left.appendChild(title);
+      if (meta.textContent) left.appendChild(meta);
+
+      btn.appendChild(left);
+      btn.addEventListener('click', () => onPick(coding));
+      wrap.appendChild(btn);
+    }
+
+    panel.appendChild(wrap);
+  }
+
+  async function search(widget, query) {
+    const { input, panel, system, code, display } = getWidgetEls(widget);
+    if (!input || !panel) return;
+
+    const q = (query || '').trim();
+    setHiddenInput(display, q);
+
+    // If the user is typing, clear any previous selected coding.
+    if (code && code.value) setHiddenInput(code, '');
+    if (system && system.value) setHiddenInput(system, '');
+
+    if (q.length < 2) {
+      hidePanel(panel);
+      return;
+    }
+
+    input.dataset.lastTerminologyQuery = q;
+    showPanel(panel);
+    setStatus(panel, 'Searching…');
+
+    const prev = abortControllers.get(input);
+    if (prev) prev.abort();
+    const controller = new AbortController();
+    abortControllers.set(input, controller);
+
+    const systemSlug = widget.getAttribute('data-terminology-search') || 'icd11';
+    const url = `/api/terminology/search/${encodeURIComponent(systemSlug)}?q=${encodeURIComponent(q)}`;
+
+    try {
+      const resp = await fetch(url, { signal: controller.signal, headers: { 'Accept': 'application/json' } });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      if (input.dataset.lastTerminologyQuery !== q) return;
+
+      const results = Array.isArray(data && data.results) ? data.results : [];
+      if (results.length === 0) {
+        setStatus(panel, 'No matches');
+        return;
+      }
+
+      renderResults(panel, results, (coding) => {
+        input.value = coding.display || '';
+        setHiddenInput(display, coding.display || '');
+        setHiddenInput(code, coding.code || '');
+        setHiddenInput(system, coding.system || '');
+        hidePanel(panel);
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;
+      setStatus(panel, 'Search failed');
+    }
+  }
+
+  function scheduleSearch(widget, query) {
+    const { input } = getWidgetEls(widget);
+    if (!input) return;
+    const prev = debounceTimers.get(input);
+    if (prev) window.clearTimeout(prev);
+    const id = window.setTimeout(() => search(widget, query), 250);
+    debounceTimers.set(input, id);
+  }
+
+  document.addEventListener('input', (ev) => {
+    const target = ev.target;
+    if (!(target instanceof HTMLInputElement)) return;
+    if (!target.hasAttribute('data-terminology-input')) return;
+    const widget = closestWidget(target);
+    if (!widget) return;
+    scheduleSearch(widget, target.value);
+  }, true);
+
+  document.addEventListener('focusin', (ev) => {
+    const target = ev.target;
+    if (!(target instanceof HTMLInputElement)) return;
+    if (!target.hasAttribute('data-terminology-input')) return;
+    const widget = closestWidget(target);
+    if (!widget) return;
+
+    const { panel } = getWidgetEls(widget);
+    if (panel && !panel.classList.contains('hidden')) return;
+    if ((target.value || '').trim().length >= 2) {
+      scheduleSearch(widget, target.value);
+    }
+  }, true);
+
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key !== 'Escape') return;
+    const widget = closestWidget(ev.target);
+    if (!widget) return;
+    const { panel } = getWidgetEls(widget);
+    hidePanel(panel);
+  }, true);
+
+  document.addEventListener('click', (ev) => {
+    const widget = closestWidget(ev.target);
+    if (widget) return;
+    for (const panel of document.querySelectorAll('[data-terminology-panel]')) {
+      hidePanel(panel);
+    }
+  }, true);
+})();
+</script>
+{% endblock %}
+
+{% block content %}
+<!-- Patient banner -->
+<div class="patient-card mb-lg">
+  <div class="avatar avatar-lg">{{ patient_initials }}</div>
+  <div class="patient-info" style="flex:1">
+    <dd class="text-lg font-600">{{ patient_name }}</dd>
+    <div class="flex gap-lg mt-xs text-sm text-secondary">
+      <span>{{ service_type }}</span>
+    </div>
+  </div>
+  <a href="/web/queue" class="btn btn-ghost btn-sm">Back to Queue</a>
+</div>
+
+{% if let Some(err) = form_error %}
+<div class="flash flash-error mb-md">{{ err }}</div>
+{% endif %}
+
+<div class="flex gap-lg items-start" style="max-width: 1100px;">
+  <!-- Main form: clinical documentation -->
+  <div style="flex: 1; min-width: 0;">
+    <form method="post" action="/web/encounters"
+          @change="dirty = true"
+          x-data="{ dirty: false, lastSaved: false }"
+          x-init="setInterval(() => {
+            if (dirty) {
+              const formData = new FormData($el);
+              fetch('/web/encounters/{{ encounter_id }}/draft', {
+                method: 'POST',
+                body: new URLSearchParams(formData)
+              });
+              dirty = false;
+              lastSaved = true;
+            }
+          }, 30000)">
+      <input type="hidden" name="encounter_id" value="{{ encounter_id }}">
+      <input type="hidden" name="queue_entry_id" value="{{ queue_entry_id }}">
+
+      <div id="form-fields">
+        {{ form_html|safe }}
+      </div>
+
+      <div class="flex gap-md mt-lg items-center">
+        <button type="submit" class="btn btn-accent">Complete Visit</button>
+        <div class="draft-indicator" x-show="dirty">Unsaved changes</div>
+        <div class="draft-indicator" x-show="!dirty && lastSaved">Draft saved</div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Sidebar: actions panel -->
+  <div style="width: 280px; flex-shrink: 0;" class="sticky" style="top: 72px;">
+    <div class="card mb-md">
+      <h3 class="mb-md">Actions</h3>
+
+      <a href="/web/encounters/{{ encounter_id }}/order-lab?queue_entry_id={{ queue_entry_id }}" class="flex items-center gap-sm p-sm mb-sm" style="border-radius: var(--radius-md); transition: background 150ms;" onmouseover="this.style.background='var(--primary-50)'" onmouseout="this.style.background=''">
+        <div style="width:36px; height:36px; border-radius: var(--radius-sm); background: var(--info-bg); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="var(--info)"><path fill-rule="evenodd" d="M7 2a1 1 0 00-.707 1.707L7 4.414V8l-4.243 4.243A2 2 0 004.172 16h11.656a2 2 0 001.414-3.414L13 8.172V4.414l.707-.707A1 1 0 0013 2H7z" clip-rule="evenodd"/></svg>
+        </div>
+        <div>
+          <div class="font-600 text-sm">Order Lab Tests</div>
+          <div class="text-xs text-secondary">Send patient to lab</div>
+        </div>
+      </a>
+
+      <a href="/web/encounters/{{ encounter_id }}/prescribe?queue_entry_id={{ queue_entry_id }}" class="flex items-center gap-sm p-sm mb-sm" style="border-radius: var(--radius-md); transition: background 150ms;" onmouseover="this.style.background='var(--primary-50)'" onmouseout="this.style.background=''">
+        <div style="width:36px; height:36px; border-radius: var(--radius-sm); background: var(--success-bg); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="var(--success)"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/></svg>
+        </div>
+        <div>
+          <div class="font-600 text-sm">Prescribe Medications</div>
+          <div class="text-xs text-secondary">Send to pharmacy</div>
+        </div>
+      </a>
+
+      <a href="#" class="flex items-center gap-sm p-sm mb-sm text-muted" style="border-radius: var(--radius-md); cursor: default;">
+        <div style="width:36px; height:36px; border-radius: var(--radius-sm); background: var(--bg-muted); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="var(--text-muted)"><path d="M8 5a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1zm0 4a1 1 0 011-1h6a1 1 0 110 2H9a1 1 0 01-1-1zm0 4a1 1 0 011-1h4a1 1 0 110 2H9a1 1 0 01-1-1z"/><path fill-rule="evenodd" d="M4 2a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2H4z" clip-rule="evenodd"/></svg>
+        </div>
+        <div>
+          <div class="font-600 text-sm">Refer Patient</div>
+          <div class="text-xs text-secondary">Coming soon</div>
+        </div>
+      </a>
+    </div>
+
+    <div class="card">
+      <h3 class="mb-sm text-sm uppercase text-secondary">Visit Summary</h3>
+      <div class="text-sm text-secondary">
+        <p class="mb-xs">Document your clinical findings in the form. Use the action buttons to order tests or prescribe medications at any point.</p>
+        <p>Click <strong>Complete Visit</strong> when documentation is finished.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

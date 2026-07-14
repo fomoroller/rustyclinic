@@ -3,25 +3,32 @@ members = [
     "crates/rustyclinic",
     "crates/rustyclinic-api",
     "crates/rustyclinic-auth",
+    "crates/rustyclinic-billing",
     "crates/rustyclinic-clinical",
     "crates/rustyclinic-core",
     "crates/rustyclinic-db",
     "crates/rustyclinic-events",
+    "crates/rustyclinic-forms",
     "crates/rustyclinic-identity",
+    "crates/rustyclinic-interop",
     "crates/rustyclinic-mcp",
     "crates/rustyclinic-packages",
     "crates/rustyclinic-projections",
     "crates/rustyclinic-services",
+    "crates/rustyclinic-sync",
+    "crates/rustyclinic-terminology",
     "crates/rustyclinic-web",
+    "crates/rustyclinic-reporting", "crates/rustyclinic-jobs",
 ]
 resolver = "2"
 
 [workspace.package]
 edition = "2024"
 version = "0.1.0"
+rust-version = "1.85"
 license = "Apache-2.0"
 authors = ["RustyClinic Contributors"]
-repository = "https://example.com/rustyclinic"
+repository = "https://github.com/fomoroller/rustyclinic"
 
 [workspace.dependencies]
 anyhow = "1.0.98"
@@ -29,6 +36,10 @@ argon2 = { version = "0.5", features = ["std"] }
 axum = "0.8.6"
 chrono = { version = "0.4.40", features = ["serde"] }
 clap = { version = "4.5.32", features = ["derive"] }
+csv = "1.3"
+flate2 = "1.1"
+quick-xml = "0.38"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
 rusqlite = { version = "0.37.0", features = ["bundled", "column_decltype"] }
 serde = { version = "1.0.219", features = ["derive"] }
 sha2 = "0.10"
@@ -37,7 +48,14 @@ thiserror = "2.0.12"
 tokio = { version = "1.44.1", features = ["macros", "net", "rt-multi-thread", "signal", "time"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt", "json"] }
+tokio-postgres = { version = "0.7", features = ["with-chrono-0_4", "with-uuid-1", "with-serde_json-1"] }
+deadpool-postgres = "0.14"
 uuid = { version = "1.16.0", features = ["v7", "serde"] }
+ed25519-dalek = { version = "2", features = ["rand_core"] }
+rand_core = { version = "0.6", features = ["getrandom"] }
+zip = "2.2"
+zstd = "0.13"
+tar = "0.4"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

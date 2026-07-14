@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block body_attrs %}x-data="{ sidebarOpen: false }" @keydown.escape.window="sidebarOpen = false"{% endblock %}
+
+{% block body %}
+<div class="app-layout">
+  <!-- Mobile overlay -->
+  <div class="sidebar-overlay" :class="sidebarOpen && 'open'" @click="sidebarOpen = false"></div>
+
+  <!-- Sidebar -->
+  {% include "partials/sidebar.html" %}
+
+  <!-- Main content -->
+  <div class="main-content">
+    <!-- Offline indicator -->
+    <div x-data="{ online: true }" @online.window="online = true" @offline.window="online = false">
+      <template x-if="!online">
+        <div class="offline-banner">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 1l14 14M3.5 6.5A7.5 7.5 0 0112.5 6.5M5.5 9A5 5 0 0110.5 9M7 11.5a2.5 2.5 0 015 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          You are offline. Changes will sync when connection is restored.
+        </div>
+      </template>
+    </div>
+
+    <!-- Session bar -->
+    <div class="session-bar">
+      <button class="hamburger" @click="sidebarOpen = !sidebarOpen" aria-label="Toggle menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="session-user">
+        {% if !display_name.is_empty() %}
+        <div class="avatar">{{ initials }}</div>
+        <span>{{ display_name }}</span>
+        {% endif %}
+      </div>
+      <div class="flex items-center gap-sm">
+        {% if !display_name.is_empty() %}
+        <form method="post" action="/web/lock">
+          <button type="submit" class="btn btn-ghost btn-sm" title="Lock session">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5 7V5a3 3 0 016 0v2"/></svg>
+            Lock
+          </button>
+        </form>
+        <form method="post" action="/web/logout">
+          <button type="submit" class="btn btn-ghost btn-sm">Logout</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Page content -->
+    <div class="content-area">
+      {% block flash %}{% endblock %}
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</div>
+{% endblock %}

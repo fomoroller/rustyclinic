@@ -1,0 +1,37 @@
+{% extends "base_app.html" %}
+
+{% block title %}Triage — {{ patient_name }} — RustyClinic{% endblock %}
+
+{% block content %}
+<!-- Patient banner -->
+<div class="patient-card mb-lg">
+  <div class="avatar avatar-lg">{{ patient_initials }}</div>
+  <div class="patient-info" style="flex:1">
+    <dd class="text-lg font-600">{{ patient_name }}</dd>
+    <div class="flex gap-lg mt-xs text-sm text-secondary">
+      <span>Triage — Vital Signs</span>
+    </div>
+  </div>
+  <a href="/web/queue" class="btn btn-ghost btn-sm">Back to Queue</a>
+</div>
+
+{% if let Some(err) = form_error %}
+<div class="flash flash-error mb-md">{{ err }}</div>
+{% endif %}
+
+<div style="max-width: 700px;">
+  <form method="post" action="/web/encounters/triage">
+    <input type="hidden" name="encounter_id" value="{{ encounter_id }}">
+    <input type="hidden" name="queue_entry_id" value="{{ queue_entry_id }}">
+
+    <div id="form-fields">
+      {{ form_html|safe }}
+    </div>
+
+    <div class="flex gap-md mt-lg items-center">
+      <button type="submit" class="btn btn-accent">Complete Triage</button>
+      <a href="/web/queue" class="btn btn-ghost">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

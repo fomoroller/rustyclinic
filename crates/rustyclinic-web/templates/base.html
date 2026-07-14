@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1E293B">
+  <title>{% block title %}RustyClinic{% endblock %}</title>
+  <link rel="preload" href="/static/fonts/source-sans-3.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/static/css/app.css">
+  <script src="/static/js/htmx.min.js" defer></script>
+  <script src="/static/js/alpine.min.js" defer></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/static/sw.js');
+    }
+  </script>
+  {% block head %}{% endblock %}
+</head>
+<body {% block body_attrs %}{% endblock %}>
+  {% block body %}{% endblock %}
+</body>
+</html>

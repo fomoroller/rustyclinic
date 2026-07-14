@@ -1,11 +1,10 @@
 //! SQLite implementation of PatientRepo.
 
-
 use rusqlite::Connection;
-use uuid::Uuid;
 use rustyclinic_core::error::{AppError, AppResult};
 use rustyclinic_core::types::Sex;
-use rustyclinic_identity::{Patient, PatientSearch, PatientRepo};
+use rustyclinic_identity::{Patient, PatientRepo, PatientSearch};
+use uuid::Uuid;
 
 pub struct SqlitePatientRepo<'a> {
     conn: &'a Connection,
@@ -86,8 +85,12 @@ impl PatientRepo for SqlitePatientRepo<'_> {
         let limit = if query.limit == 0 { 50 } else { query.limit };
         sql.push_str(&format!(" LIMIT {limit}"));
 
-        let mut stmt = self.conn.prepare(&sql).map_err(|e| AppError::Database(e.to_string()))?;
-        let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+        let mut stmt = self
+            .conn
+            .prepare(&sql)
+            .map_err(|e| AppError::Database(e.to_string()))?;
+        let param_refs: Vec<&dyn rusqlite::types::ToSql> =
+            params.iter().map(|p| p.as_ref()).collect();
 
         let rows = stmt
             .query_map(param_refs.as_slice(), |row| Ok(row_to_patient(row)))
@@ -95,8 +98,9 @@ impl PatientRepo for SqlitePatientRepo<'_> {
 
         let mut patients = Vec::new();
         for row in rows {
-            let p = row.map_err(|e| AppError::Database(e.to_string()))?
-                      .map_err(|e| AppError::Database(e.to_string()))?;
+            let p = row
+                .map_err(|e| AppError::Database(e.to_string()))?
+                .map_err(|e| AppError::Database(e.to_string()))?;
             patients.push(p);
         }
         Ok(patients)

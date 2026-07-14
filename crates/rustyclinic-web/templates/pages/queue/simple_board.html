@@ -1,0 +1,49 @@
+{% extends "base_app.html" %}
+
+{% block title %}Queue — RustyClinic{% endblock %}
+
+{% block flash %}{% include "partials/flash.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Queue Board</h1>
+  <a href="/web/patients" class="btn btn-accent">+ Patient</a>
+</div>
+
+<div id="board-content"
+     hx-get="/web/queue/simple-board-content"
+     hx-trigger="every 10s"
+     hx-swap="innerHTML">
+  {% include "partials/queue_stats.html" %}
+
+  {% if patients.is_empty() %}
+  <div class="empty-state">
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
+      <rect x="6" y="10" width="36" height="28" rx="4"/>
+      <path d="M6 18h36M18 26h12M20 32h8"/>
+    </svg>
+    <p>No patients in the queue today. Search for a patient to enqueue them.</p>
+    <a href="/web/patients" class="btn btn-accent">Find Patient</a>
+  </div>
+  {% else %}
+  <div class="card table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Patient</th>
+          <th>Status</th>
+          <th>Since</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in patients %}
+        {% include "partials/simple_queue_row.html" %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

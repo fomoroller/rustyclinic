@@ -1,0 +1,10 @@
+<div class="empty-state">
+  <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
+    <rect x="6" y="10" width="36" height="28" rx="4"/>
+    <path d="M6 18h36M18 26h12M20 32h8"/>
+  </svg>
+  <p>{{ message }}</p>
+  {% if let Some(url) = action_url %}
+  <a href="{{ url }}" class="btn btn-accent">{{ action_label }}</a>
+  {% endif %}
+</div>

@@ -1,10 +1,9 @@
 //! SQLite implementation of QueueEntryRepo.
 
-
 use rusqlite::Connection;
-use uuid::Uuid;
-use rustyclinic_core::error::{AppError, AppResult};
 use rustyclinic_clinical::queue::{QueueEntry, QueueEntryRepo, QueueStatus};
+use rustyclinic_core::error::{AppError, AppResult};
+use uuid::Uuid;
 
 pub struct SqliteQueueRepo<'a> {
     conn: &'a Connection,
@@ -20,13 +19,15 @@ impl QueueEntryRepo for SqliteQueueRepo<'_> {
     fn create(&self, entry: &QueueEntry) -> AppResult<()> {
         self.conn
             .execute(
-                "INSERT INTO queue_entries (id, facility_id, patient_id, service_type, status, assigned_to, position, arrived_at, called_at, service_started_at, completed_at, created_at, version)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)",
+                "INSERT INTO queue_entries (id, facility_id, patient_id, service_type, department, encounter_id, status, assigned_to, position, arrived_at, called_at, service_started_at, completed_at, created_at, version)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)",
                 rusqlite::params![
                     entry.id.to_string(),
                     entry.facility_id.to_string(),
                     entry.patient_id.to_string(),
                     entry.service_type,
+                    entry.department,
+                    entry.encounter_id.map(|u| u.to_string()),
                     entry.status.to_string(),
                     entry.assigned_to.map(|u| u.to_string()),
                     entry.position,
@@ -45,7 +46,7 @@ impl QueueEntryRepo for SqliteQueueRepo<'_> {
     fn find_by_id(&self, id: Uuid) -> AppResult<Option<QueueEntry>> {
         let result = self.conn
             .query_row(
-                "SELECT id, facility_id, patient_id, service_type, status, assigned_to, position, arrived_at, called_at, service_started_at, completed_at, created_at, version
+                "SELECT id, facility_id, patient_id, service_type, status, assigned_to, position, arrived_at, called_at, service_started_at, completed_at, created_at, version, department, encounter_id
                  FROM queue_entries WHERE id = ?1",
                 rusqlite::params![id.to_string()],
                 |row| Ok(row_to_queue_entry(row)),
@@ -61,7 +62,7 @@ impl QueueEntryRepo for SqliteQueueRepo<'_> {
     fn find_active_by_facility(&self, facility_id: Uuid) -> AppResult<Vec<QueueEntry>> {
         let mut stmt = self.conn
             .prepare(
-                "SELECT id, facility_id, patient_id, service_type, status, assigned_to, position, arrived_at, called_at, service_started_at, completed_at, created_at, version
+                "SELECT id, facility_id, patient_id, service_type, status, assigned_to, position, arrived_at, called_at, service_started_at, completed_at, created_at, version, department, encounter_id
                  FROM queue_entries
                  WHERE facility_id = ?1 AND status NOT IN ('completed', 'cancelled', 'no_show')
                  ORDER BY position ASC",
@@ -76,8 +77,66 @@ impl QueueEntryRepo for SqliteQueueRepo<'_> {
 
         let mut entries = Vec::new();
         for row in rows {
-            let entry = row.map_err(|e| AppError::Database(e.to_string()))?
-                          .map_err(|e| AppError::Database(e.to_string()))?;
+            let entry = row
+                .map_err(|e| AppError::Database(e.to_string()))?
+                .map_err(|e| AppError::Database(e.to_string()))?;
+            entries.push(entry);
+        }
+        Ok(entries)
+    }
+
+    fn find_active_by_facility_and_department(
+        &self,
+        facility_id: Uuid,
+        department: &str,
+    ) -> AppResult<Vec<QueueEntry>> {
+        let mut stmt = self.conn
+            .prepare(
+                "SELECT id, facility_id, patient_id, service_type, status, assigned_to, position, arrived_at, called_at, service_started_at, completed_at, created_at, version, department, encounter_id
+                 FROM queue_entries
+                 WHERE facility_id = ?1 AND department = ?2 AND status NOT IN ('completed', 'cancelled', 'no_show')
+                 ORDER BY position ASC",
+            )
+            .map_err(|e| AppError::Database(e.to_string()))?;
+
+        let rows = stmt
+            .query_map(
+                rusqlite::params![facility_id.to_string(), department],
+                |row| Ok(row_to_queue_entry(row)),
+            )
+            .map_err(|e| AppError::Database(e.to_string()))?;
+
+        let mut entries = Vec::new();
+        for row in rows {
+            let entry = row
+                .map_err(|e| AppError::Database(e.to_string()))?
+                .map_err(|e| AppError::Database(e.to_string()))?;
+            entries.push(entry);
+        }
+        Ok(entries)
+    }
+
+    fn find_by_encounter(&self, encounter_id: Uuid) -> AppResult<Vec<QueueEntry>> {
+        let mut stmt = self.conn
+            .prepare(
+                "SELECT id, facility_id, patient_id, service_type, status, assigned_to, position, arrived_at, called_at, service_started_at, completed_at, created_at, version, department, encounter_id
+                 FROM queue_entries
+                 WHERE encounter_id = ?1
+                 ORDER BY position ASC",
+            )
+            .map_err(|e| AppError::Database(e.to_string()))?;
+
+        let rows = stmt
+            .query_map(rusqlite::params![encounter_id.to_string()], |row| {
+                Ok(row_to_queue_entry(row))
+            })
+            .map_err(|e| AppError::Database(e.to_string()))?;
+
+        let mut entries = Vec::new();
+        for row in rows {
+            let entry = row
+                .map_err(|e| AppError::Database(e.to_string()))?
+                .map_err(|e| AppError::Database(e.to_string()))?;
             entries.push(entry);
         }
         Ok(entries)
@@ -86,8 +145,8 @@ impl QueueEntryRepo for SqliteQueueRepo<'_> {
     fn update(&self, entry: &QueueEntry) -> AppResult<()> {
         let affected = self.conn
             .execute(
-                "UPDATE queue_entries SET status=?1, assigned_to=?2, called_at=?3, service_started_at=?4, completed_at=?5, version=?6
-                 WHERE id=?7 AND version=?8",
+                "UPDATE queue_entries SET status=?1, assigned_to=?2, called_at=?3, service_started_at=?4, completed_at=?5, version=?6, department=?7, encounter_id=?8
+                 WHERE id=?9 AND version=?10",
                 rusqlite::params![
                     entry.status.to_string(),
                     entry.assigned_to.map(|u| u.to_string()),
@@ -95,6 +154,8 @@ impl QueueEntryRepo for SqliteQueueRepo<'_> {
                     entry.service_started_at.map(|t| t.to_rfc3339()),
                     entry.completed_at.map(|t| t.to_rfc3339()),
                     entry.version,
+                    entry.department,
+                    entry.encounter_id.map(|u| u.to_string()),
                     entry.id.to_string(),
                     entry.version - 1,
                 ],
@@ -133,6 +194,8 @@ fn row_to_queue_entry(row: &rusqlite::Row) -> Result<QueueEntry, rusqlite::Error
     let started_str: Option<String> = row.get(9)?;
     let completed_str: Option<String> = row.get(10)?;
     let created_str: String = row.get(11)?;
+    let department: String = row.get(13)?;
+    let encounter_str: Option<String> = row.get(14)?;
 
     let parse_dt = |s: &str| {
         chrono::DateTime::parse_from_rfc3339(s)
@@ -145,6 +208,8 @@ fn row_to_queue_entry(row: &rusqlite::Row) -> Result<QueueEntry, rusqlite::Error
         facility_id: Uuid::parse_str(&facility_str).unwrap_or_default(),
         patient_id: Uuid::parse_str(&patient_str).unwrap_or_default(),
         service_type: row.get(3)?,
+        department,
+        encounter_id: encounter_str.and_then(|s| Uuid::parse_str(&s).ok()),
         status: match status_str.as_str() {
             "created" => QueueStatus::Created,
             "waiting" => QueueStatus::Waiting,

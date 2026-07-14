@@ -1,0 +1,93 @@
+{% extends "base_app.html" %}
+
+{% block title %}Patient Detail — RustyClinic{% endblock %}
+
+{% block flash %}{% include "partials/flash.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>{{ patient_name }}</h1>
+    <p class="text-muted">Patient timeline and summary</p>
+  </div>
+  <div class="flex gap-sm" style="align-items:center;">
+    <a href="/web/patients/{{ patient_id }}/print" target="_blank" rel="noopener" class="btn btn-ghost">Print Card</a>
+    <form method="post" action="/web/queue/enqueue" style="display:inline">
+      <input type="hidden" name="patient_id" value="{{ patient_id }}">
+      <input type="hidden" name="service_type" value="consultation">
+      <button type="submit" class="btn btn-accent">Enqueue</button>
+    </form>
+  </div>
+</div>
+
+<div class="grid-2 mb-lg">
+  <div class="card">
+    <div class="section-label">Summary</div>
+    <dl class="data-list">
+      <div><dt>Name</dt><dd>{{ patient_name }}</dd></div>
+      <div><dt>Sex</dt><dd>{{ sex }}</dd></div>
+      <div><dt>Age</dt><dd>{{ age }}</dd></div>
+      <div><dt>National ID</dt><dd>{{ national_id }}</dd></div>
+      <div><dt>Last Visit</dt><dd>{{ last_visit }}</dd></div>
+      <div>
+        <dt>Active Programs</dt>
+        <dd>
+          {% if active_programs.is_empty() %}
+            —
+          {% else %}
+            {% for program in active_programs %}{% if !loop.first %}, {% endif %}{{ program }}{% endfor %}
+          {% endif %}
+        </dd>
+      </div>
+    </dl>
+  </div>
+
+  <div class="card">
+    <div class="section-label">Identity</div>
+    <div class="patient-chip mb-md">
+      <div class="patient-avatar">{{ patient_initials }}</div>
+      <div>
+        <strong>{{ patient_name }}</strong>
+        <div class="text-muted">{{ patient_id }}</div>
+      </div>
+    </div>
+    <p class="text-muted">Projection-backed summary and timeline data for quick clinical review.</p>
+  </div>
+</div>
+
+<div class="card table-wrap">
+  <div class="page-header" style="margin-bottom:16px;">
+    <h2 style="margin:0;">Longitudinal Timeline</h2>
+  </div>
+  {% if timeline.is_empty() %}
+  <div class="empty-state">
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M10 12h28M10 24h28M10 36h18"/>
+      <circle cx="34" cy="36" r="4"/>
+    </svg>
+    <p>No timeline entries yet. New encounters, lab orders, and dispensing activity will appear here.</p>
+  </div>
+  {% else %}
+  <table>
+    <thead>
+      <tr>
+        <th>When</th>
+        <th>Type</th>
+        <th>Title</th>
+        <th>Detail</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in timeline %}
+      <tr>
+        <td>{{ item.occurred_at }}</td>
+        <td>{{ item.entry_type }}</td>
+        <td><strong>{{ item.title }}</strong></td>
+        <td>{{ item.detail }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base_auth.html" %}
+
+{% block title %}Log In — RustyClinic{% endblock %}
+
+{% block auth_content %}
+<h1 class="auth-title">RustyClinic</h1>
+<p class="auth-subtitle">Sign in to continue</p>
+
+{% if let Some(err) = error %}
+<div class="flash flash-error mb-md">
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+  {{ err }}
+</div>
+{% endif %}
+
+<form method="post" action="/web/login">
+  <div class="form-group">
+    <label class="form-label" for="username">Username</label>
+    <input class="form-input" type="text" id="username" name="username" autocomplete="username" required autofocus>
+  </div>
+  <div class="form-group">
+    <label class="form-label" for="password">Password</label>
+    <input class="form-input" type="password" id="password" name="password" autocomplete="current-password" required>
+  </div>
+  <button type="submit" class="btn btn-accent w-full mt-md">Log in</button>
+</form>
+{% endblock %}

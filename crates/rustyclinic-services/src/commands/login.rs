@@ -1,11 +1,10 @@
 //! Authenticate a user and create a session.
 
-use uuid::Uuid;
-use rustyclinic_core::error::{AppError, AppResult};
 use rustyclinic_auth::credentials::verify_credential;
-use rustyclinic_auth::session::Session;
+use rustyclinic_auth::session::{Session, SessionRepo, SessionState};
 use rustyclinic_auth::users::UserRepo;
-use rustyclinic_auth::session::SessionRepo;
+use rustyclinic_core::error::{AppError, AppResult};
+use uuid::Uuid;
 
 pub struct LoginInput {
     pub facility_id: Uuid,
@@ -19,6 +18,7 @@ pub struct LoginOutput {
     pub user_id: Uuid,
     pub display_name: String,
     pub roles: Vec<String>,
+    pub requires_pin_setup: bool,
 }
 
 /// Authenticate user and create a session.
@@ -28,7 +28,7 @@ pub fn execute(
     input: LoginInput,
 ) -> AppResult<LoginOutput> {
     // Find user
-    let (user, password_hash) = user_repo
+    let (user, password_hash, pin_hash) = user_repo
         .find_by_username(input.facility_id, &input.username)?
         .ok_or_else(|| AppError::AuthorizationDenied {
             reason: "invalid username or password".to_string(),
@@ -46,6 +46,22 @@ pub fn execute(
         return Err(AppError::AuthorizationDenied {
             reason: "invalid username or password".to_string(),
         });
+    }
+
+    if session_repo.count_locked_by_device(input.device_id)? >= 3 {
+        let mut locked_sessions = session_repo
+            .find_active_by_device(input.device_id)?
+            .into_iter()
+            .filter(|session| session.state == SessionState::Locked)
+            .collect::<Vec<_>>();
+
+        locked_sessions.sort_by_key(|session| session.locked_at.unwrap_or(session.created_at));
+
+        if let Some(mut oldest_locked) = locked_sessions.into_iter().next() {
+            oldest_locked.state = SessionState::Terminated;
+            oldest_locked.locked_at = None;
+            session_repo.update(&oldest_locked)?;
+        }
     }
 
     // Create session
@@ -71,5 +87,6 @@ pub fn execute(
         user_id: user.id,
         display_name: user.display_name,
         roles: user.roles,
+        requires_pin_setup: pin_hash.is_none(),
     })
 }

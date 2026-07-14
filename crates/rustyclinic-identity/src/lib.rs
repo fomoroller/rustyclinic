@@ -1,9 +1,9 @@
 //! Patient identity, matching, and identifier management.
 
 use chrono::{DateTime, NaiveDate, Utc};
+use rustyclinic_core::types::Sex;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use rustyclinic_core::types::Sex;
 
 /// Facility-level patient record.
 #[derive(Debug, Clone, Serialize, Deserialize)]

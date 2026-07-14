@@ -1,0 +1,62 @@
+{% extends "base_app.html" %}
+
+{% block title %}Lab Queue — RustyClinic{% endblock %}
+
+{% block flash %}{% include "partials/flash.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Lab Queue</h1>
+</div>
+
+{% if orders.is_empty() %}
+<div class="empty-state">
+  <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
+    <rect x="6" y="10" width="36" height="28" rx="4"/>
+    <path d="M6 18h36M18 26h12M20 32h8"/>
+  </svg>
+  <p>No pending lab orders. Orders will appear here when clinicians request tests.</p>
+</div>
+{% else %}
+<div class="card table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Patient</th>
+        <th>Tests</th>
+        <th>Priority</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for o in orders %}
+      <tr>
+        <td><strong>{{ o.patient_name }}</strong></td>
+        <td class="tabular">{{ o.test_count }} test{% if o.test_count != 1 %}s{% endif %}</td>
+        <td>
+          {% if o.priority == "stat" %}
+            <span class="badge badge-in-service"><span class="badge-dot"></span>STAT</span>
+          {% else if o.priority == "urgent" %}
+            <span class="badge badge-called"><span class="badge-dot"></span>Urgent</span>
+          {% else %}
+            <span class="badge badge-waiting"><span class="badge-dot"></span>Routine</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if o.status == "pending" %}
+            <span class="badge badge-waiting"><span class="badge-dot"></span>Pending</span>
+          {% else %}
+            <span class="badge badge-called"><span class="badge-dot"></span>In Progress</span>
+          {% endif %}
+        </td>
+        <td>
+          <a href="/web/lab/{{ o.order_id }}/results" class="btn btn-sm btn-accent">Enter Results</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

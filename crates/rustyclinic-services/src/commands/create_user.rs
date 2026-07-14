@@ -1,11 +1,11 @@
 //! Create a new user account.
 
 use chrono::Utc;
-use uuid::Uuid;
-use rustyclinic_core::error::AppResult;
-use rustyclinic_core::types::new_id;
 use rustyclinic_auth::credentials::hash_credential;
 use rustyclinic_auth::users::{User, UserRepo};
+use rustyclinic_core::error::AppResult;
+use rustyclinic_core::types::new_id;
+use uuid::Uuid;
 
 pub struct CreateUserInput {
     pub facility_id: Uuid,
@@ -16,10 +16,7 @@ pub struct CreateUserInput {
 }
 
 /// Create a new user. Returns user ID.
-pub fn execute(
-    repo: &dyn UserRepo,
-    input: CreateUserInput,
-) -> AppResult<Uuid> {
+pub fn execute(repo: &dyn UserRepo, input: CreateUserInput) -> AppResult<Uuid> {
     let user_id = new_id();
     let now = Utc::now();
 

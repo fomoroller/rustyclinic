@@ -1,0 +1,423 @@
+{
+  "id": "anc-visit",
+  "version": "1.0.0",
+  "title": "Antenatal Care Visit (Rwanda MoH)",
+  "items": [
+    {
+      "linkId": "visit_info",
+      "type": { "kind": "group" },
+      "text": "Visit Information",
+      "required": false,
+      "items": [
+        {
+          "linkId": "visit_number",
+          "type": { "kind": "integer" },
+          "text": "Visit Number",
+          "required": false,
+          "validation": [
+            {
+              "expression": {
+                "type": "op",
+                "op": "or",
+                "left": { "type": "empty", "operand": { "type": "field", "linkId": "visit_number" } },
+                "right": {
+                  "type": "op",
+                  "op": "gt",
+                  "left": { "type": "field", "linkId": "visit_number" },
+                  "right": { "type": "literal", "value": 0, "dataType": "integer" }
+                }
+              },
+              "severity": "error",
+              "message": "Visit number must be positive"
+            }
+          ]
+        },
+        {
+          "linkId": "lmp_date",
+          "type": { "kind": "date" },
+          "text": "Last Menstrual Period (LMP)",
+          "required": true
+        },
+        {
+          "linkId": "gestational_age_weeks",
+          "type": { "kind": "integer" },
+          "text": "Gestational Age (weeks)",
+          "required": false,
+          "readOnly": true,
+          "computedValue": {
+            "type": "fn",
+            "name": "gestational_age",
+            "args": [
+              { "type": "field", "linkId": "lmp_date" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "linkId": "vitals",
+      "type": { "kind": "group" },
+      "text": "Vital Signs",
+      "required": false,
+      "items": [
+        {
+          "linkId": "weight_kg",
+          "type": { "kind": "decimal" },
+          "text": "Weight (kg)",
+          "required": true,
+          "validation": [
+            {
+              "expression": {
+                "type": "op",
+                "op": "gt",
+                "left": { "type": "field", "linkId": "weight_kg" },
+                "right": { "type": "literal", "value": 0, "dataType": "decimal" }
+              },
+              "severity": "error",
+              "message": "Weight must be greater than 0"
+            },
+            {
+              "expression": {
+                "type": "op",
+                "op": "lt",
+                "left": { "type": "field", "linkId": "weight_kg" },
+                "right": { "type": "literal", "value": 300, "dataType": "decimal" }
+              },
+              "severity": "warning",
+              "message": "Weight exceeds 300 kg \u2014 please verify"
+            }
+          ]
+        },
+        {
+          "linkId": "height_cm",
+          "type": { "kind": "decimal" },
+          "text": "Height (cm)",
+          "required": true,
+          "validation": [
+            {
+              "expression": {
+                "type": "op",
+                "op": "gt",
+                "left": { "type": "field", "linkId": "height_cm" },
+                "right": { "type": "literal", "value": 0, "dataType": "decimal" }
+              },
+              "severity": "error",
+              "message": "Height must be greater than 0"
+            }
+          ]
+        },
+        {
+          "linkId": "bp_systolic",
+          "type": { "kind": "integer" },
+          "text": "Blood Pressure \u2014 Systolic (mmHg)",
+          "required": false,
+          "validation": [
+            {
+              "expression": {
+                "type": "op",
+                "op": "or",
+                "left": { "type": "empty", "operand": { "type": "field", "linkId": "bp_systolic" } },
+                "right": {
+                  "type": "op",
+                  "op": "ge",
+                  "left": { "type": "field", "linkId": "bp_systolic" },
+                  "right": { "type": "literal", "value": 50, "dataType": "integer" }
+                }
+              },
+              "severity": "warning",
+              "message": "Systolic BP below 50 mmHg is unusual"
+            }
+          ]
+        },
+        {
+          "linkId": "bp_diastolic",
+          "type": { "kind": "integer" },
+          "text": "Blood Pressure \u2014 Diastolic (mmHg)",
+          "required": false
+        },
+        {
+          "linkId": "pulse_rate",
+          "type": { "kind": "integer" },
+          "text": "Pulse Rate (bpm)",
+          "required": false
+        },
+        {
+          "linkId": "temperature_c",
+          "type": { "kind": "decimal" },
+          "text": "Temperature (\u00b0C)",
+          "required": false,
+          "validation": [
+            {
+              "expression": {
+                "type": "op",
+                "op": "or",
+                "left": { "type": "empty", "operand": { "type": "field", "linkId": "temperature_c" } },
+                "right": {
+                  "type": "op",
+                  "op": "ge",
+                  "left": { "type": "field", "linkId": "temperature_c" },
+                  "right": { "type": "literal", "value": 30, "dataType": "decimal" }
+                }
+              },
+              "severity": "error",
+              "message": "Temperature must be at least 30\u00b0C"
+            },
+            {
+              "expression": {
+                "type": "op",
+                "op": "or",
+                "left": { "type": "empty", "operand": { "type": "field", "linkId": "temperature_c" } },
+                "right": {
+                  "type": "op",
+                  "op": "le",
+                  "left": { "type": "field", "linkId": "temperature_c" },
+                  "right": { "type": "literal", "value": 45, "dataType": "decimal" }
+                }
+              },
+              "severity": "error",
+              "message": "Temperature must be at most 45\u00b0C"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linkId": "bmi",
+      "type": { "kind": "decimal" },
+      "text": "BMI",
+      "required": false,
+      "readOnly": true,
+      "computedValue": {
+        "type": "fn",
+        "name": "bmi",
+        "args": [
+          { "type": "field", "linkId": "weight_kg" },
+          { "type": "field", "linkId": "height_cm" }
+        ]
+      }
+    },
+    {
+      "linkId": "obstetric",
+      "type": { "kind": "group" },
+      "text": "Obstetric Examination",
+      "required": false,
+      "items": [
+        {
+          "linkId": "fundal_height_cm",
+          "type": { "kind": "decimal" },
+          "text": "Fundal Height (cm)",
+          "required": false
+        },
+        {
+          "linkId": "fetal_heart_rate",
+          "type": { "kind": "integer" },
+          "text": "Fetal Heart Rate (bpm)",
+          "required": false,
+          "validation": [
+            {
+              "expression": {
+                "type": "op",
+                "op": "or",
+                "left": { "type": "empty", "operand": { "type": "field", "linkId": "fetal_heart_rate" } },
+                "right": {
+                  "type": "op",
+                  "op": "ge",
+                  "left": { "type": "field", "linkId": "fetal_heart_rate" },
+                  "right": { "type": "literal", "value": 100, "dataType": "integer" }
+                }
+              },
+              "severity": "warning",
+              "message": "Fetal heart rate below 100 bpm may indicate fetal distress"
+            },
+            {
+              "expression": {
+                "type": "op",
+                "op": "or",
+                "left": { "type": "empty", "operand": { "type": "field", "linkId": "fetal_heart_rate" } },
+                "right": {
+                  "type": "op",
+                  "op": "le",
+                  "left": { "type": "field", "linkId": "fetal_heart_rate" },
+                  "right": { "type": "literal", "value": 180, "dataType": "integer" }
+                }
+              },
+              "severity": "warning",
+              "message": "Fetal heart rate above 180 bpm may indicate fetal distress"
+            }
+          ]
+        },
+        {
+          "linkId": "fetal_presentation",
+          "type": {
+            "kind": "choice",
+            "options": [
+              { "value": "cephalic", "label": "Cephalic" },
+              { "value": "breech", "label": "Breech" },
+              { "value": "transverse", "label": "Transverse" },
+              { "value": "unknown", "label": "Unknown" }
+            ]
+          },
+          "text": "Fetal Presentation",
+          "required": false
+        }
+      ]
+    },
+    {
+      "linkId": "lab_results",
+      "type": { "kind": "group" },
+      "text": "Laboratory Results",
+      "required": false,
+      "items": [
+        {
+          "linkId": "hemoglobin",
+          "type": { "kind": "decimal" },
+          "text": "Hemoglobin (g/dL)",
+          "required": false,
+          "validation": [
+            {
+              "expression": {
+                "type": "op",
+                "op": "or",
+                "left": { "type": "empty", "operand": { "type": "field", "linkId": "hemoglobin" } },
+                "right": {
+                  "type": "op",
+                  "op": "ge",
+                  "left": { "type": "field", "linkId": "hemoglobin" },
+                  "right": { "type": "literal", "value": 10, "dataType": "decimal" }
+                }
+              },
+              "severity": "warning",
+              "message": "Hemoglobin below 10 g/dL \u2014 consider iron supplementation and further investigation"
+            }
+          ]
+        },
+        {
+          "linkId": "blood_group",
+          "type": {
+            "kind": "choice",
+            "options": [
+              { "value": "A+", "label": "A+" },
+              { "value": "A-", "label": "A-" },
+              { "value": "B+", "label": "B+" },
+              { "value": "B-", "label": "B-" },
+              { "value": "AB+", "label": "AB+" },
+              { "value": "AB-", "label": "AB-" },
+              { "value": "O+", "label": "O+" },
+              { "value": "O-", "label": "O-" }
+            ]
+          },
+          "text": "Blood Group",
+          "required": false
+        },
+        {
+          "linkId": "hiv_status",
+          "type": {
+            "kind": "choice",
+            "options": [
+              { "value": "positive", "label": "Positive" },
+              { "value": "negative", "label": "Negative" },
+              { "value": "unknown", "label": "Unknown" },
+              { "value": "not_tested", "label": "Not Tested" }
+            ]
+          },
+          "text": "HIV Status",
+          "required": true
+        },
+        {
+          "linkId": "syphilis_result",
+          "type": {
+            "kind": "choice",
+            "options": [
+              { "value": "reactive", "label": "Reactive" },
+              { "value": "non_reactive", "label": "Non-reactive" },
+              { "value": "not_tested", "label": "Not Tested" }
+            ]
+          },
+          "text": "Syphilis Test Result",
+          "required": false
+        }
+      ]
+    },
+    {
+      "linkId": "hiv_section",
+      "type": { "kind": "group" },
+      "text": "HIV Management",
+      "required": false,
+      "enableWhen": {
+        "type": "op",
+        "op": "eq",
+        "left": { "type": "field", "linkId": "hiv_status" },
+        "right": { "type": "literal", "value": "positive", "dataType": "string" }
+      },
+      "items": [
+        {
+          "linkId": "on_art",
+          "type": { "kind": "boolean" },
+          "text": "Currently on ART",
+          "required": false
+        },
+        {
+          "linkId": "arv_regimen",
+          "type": { "kind": "string" },
+          "text": "ARV Regimen",
+          "required": false,
+          "enableWhen": {
+            "type": "op",
+            "op": "eq",
+            "left": { "type": "field", "linkId": "on_art" },
+            "right": { "type": "literal", "value": true, "dataType": "boolean" }
+          }
+        },
+        {
+          "linkId": "viral_load",
+          "type": { "kind": "decimal" },
+          "text": "Viral Load (copies/mL)",
+          "required": false,
+          "enableWhen": {
+            "type": "op",
+            "op": "eq",
+            "left": { "type": "field", "linkId": "on_art" },
+            "right": { "type": "literal", "value": true, "dataType": "boolean" }
+          }
+        }
+      ]
+    },
+    {
+      "linkId": "iron_folate_dispensed",
+      "type": { "kind": "boolean" },
+      "text": "Iron/Folate Dispensed",
+      "required": false
+    },
+    {
+      "linkId": "pmtct_counseling_done",
+      "type": { "kind": "boolean" },
+      "text": "PMTCT Counseling Done",
+      "required": false,
+      "enableWhen": {
+        "type": "op",
+        "op": "eq",
+        "left": { "type": "field", "linkId": "hiv_status" },
+        "right": { "type": "literal", "value": "positive", "dataType": "string" }
+      }
+    },
+    {
+      "linkId": "danger_signs_assessed",
+      "type": { "kind": "boolean" },
+      "text": "Danger Signs Assessed",
+      "required": false
+    },
+    {
+      "linkId": "next_appointment_date",
+      "type": { "kind": "date" },
+      "text": "Next Appointment Date",
+      "required": false
+    },
+    {
+      "linkId": "notes",
+      "type": { "kind": "string" },
+      "text": "Notes",
+      "required": false
+    }
+  ],
+  "mappings": []
+}

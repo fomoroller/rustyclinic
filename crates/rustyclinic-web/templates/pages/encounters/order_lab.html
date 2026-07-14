@@ -1,0 +1,416 @@
+{% extends "base_app.html" %}
+
+{% block title %}Order Lab Tests — RustyClinic{% endblock %}
+
+{% block head %}
+<script>
+(() => {
+  if (window.__rcLoincMultiSelectV1) return;
+  window.__rcLoincMultiSelectV1 = true;
+
+  const debounceTimers = new WeakMap();
+  const abortControllers = new WeakMap();
+
+  function closestWidget(el) {
+    return el?.closest?.('[data-loinc-multiselect]') ?? null;
+  }
+
+  function getWidgetEls(widget) {
+    const input = widget.querySelector('[data-loinc-input]');
+    const panel = widget.querySelector('[data-loinc-panel]');
+    const selected = widget.querySelector('[data-loinc-selected]');
+    const hidden = widget.querySelector('[data-loinc-hidden]');
+    return { input, panel, selected, hidden };
+  }
+
+  function cssAttrValue(value) {
+    return String(value || '').replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  }
+
+  function hidePanel(panel) {
+    if (!panel) return;
+    panel.classList.add('hidden');
+    panel.innerHTML = '';
+  }
+
+  function showPanel(panel) {
+    if (!panel) return;
+    panel.classList.remove('hidden');
+  }
+
+  function setStatus(panel, text) {
+    if (!panel) return;
+    panel.innerHTML = '';
+    const msg = document.createElement('div');
+    msg.className = 'p-sm text-sm text-secondary';
+    msg.textContent = text;
+    panel.appendChild(msg);
+  }
+
+  function renderEmptyState(widget) {
+    const { selected } = getWidgetEls(widget);
+    if (!selected) return;
+    selected.innerHTML = '';
+    const msg = document.createElement('div');
+    msg.className = 'text-sm text-secondary';
+    msg.textContent = 'No LOINC tests added';
+    msg.dataset.loincEmptyState = '1';
+    selected.appendChild(msg);
+  }
+
+  function getHiddenInput(widget, code) {
+    const name = `test_loinc_${code}`;
+    return widget.querySelector(`input[type="hidden"][name="${cssAttrValue(name)}"]`);
+  }
+
+  function getSelectedRow(widget, code) {
+    return widget.querySelector(`[data-loinc-selected-item][data-loinc-code="${cssAttrValue(code)}"]`);
+  }
+
+  function addSelected(widget, coding) {
+    const { input, panel, selected, hidden } = getWidgetEls(widget);
+    if (!selected || !hidden) return;
+
+    const code = String(coding?.code ?? '').trim();
+    if (!code) return;
+    const display = String(coding?.display ?? '').trim() || code;
+
+    if (getHiddenInput(widget, code) || getSelectedRow(widget, code)) {
+      if (input) input.value = '';
+      hidePanel(panel);
+      return;
+    }
+
+    // Remove any empty-state placeholder.
+    if (selected.children.length === 1) {
+      const only = selected.children[0];
+      if (only instanceof HTMLElement && only.dataset && only.dataset.loincEmptyState === '1') {
+        only.remove();
+      }
+    }
+
+    const hid = document.createElement('input');
+    hid.type = 'hidden';
+    hid.name = `test_loinc_${code}`;
+    hid.value = display;
+    hidden.appendChild(hid);
+
+    const row = document.createElement('div');
+    row.className = 'session-item w-full';
+    row.dataset.loincSelectedItem = '1';
+    row.dataset.loincCode = code;
+
+    const rowInner = document.createElement('div');
+    rowInner.className = 'flex items-center gap-sm';
+
+    const left = document.createElement('div');
+    left.className = 'flex-1';
+
+    const title = document.createElement('div');
+    title.className = 'font-600 text-sm';
+    title.textContent = display;
+
+    const meta = document.createElement('div');
+    meta.className = 'text-xs text-secondary tabular truncate';
+    meta.textContent = code;
+
+    left.appendChild(title);
+    left.appendChild(meta);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'btn btn-ghost btn-sm';
+    removeBtn.textContent = 'Remove';
+    removeBtn.setAttribute('aria-label', `Remove ${display}`);
+    removeBtn.dataset.loincRemove = '1';
+
+    rowInner.appendChild(left);
+    rowInner.appendChild(removeBtn);
+    row.appendChild(rowInner);
+    selected.appendChild(row);
+
+    if (input) input.value = '';
+    hidePanel(panel);
+  }
+
+  function removeSelected(widget, code) {
+    const hid = getHiddenInput(widget, code);
+    if (hid) hid.remove();
+    const row = getSelectedRow(widget, code);
+    if (row) row.remove();
+
+    const { selected } = getWidgetEls(widget);
+    if (selected && selected.children.length === 0) {
+      renderEmptyState(widget);
+    }
+  }
+
+  function renderResults(panel, results) {
+    panel.innerHTML = '';
+    const wrap = document.createElement('div');
+    wrap.className = 'p-sm flex flex-col gap-xs';
+
+    for (const concept of results) {
+      const coding = concept?.coding ?? null;
+      if (!coding || !coding.code) continue;
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'session-item w-full';
+      btn.dataset.loincPick = '1';
+      btn.dataset.loincCode = String(coding.code || '');
+      btn.dataset.loincDisplay = String(coding.display || '');
+
+      const left = document.createElement('div');
+      left.className = 'flex-1';
+
+      const title = document.createElement('div');
+      title.className = 'font-600 text-sm';
+      title.textContent = coding.display || '';
+
+      const meta = document.createElement('div');
+      meta.className = 'text-xs text-secondary tabular truncate';
+      meta.textContent = coding.code ? `${coding.code}` : '';
+
+      left.appendChild(title);
+      if (meta.textContent) left.appendChild(meta);
+      btn.appendChild(left);
+      wrap.appendChild(btn);
+    }
+
+    if (wrap.children.length === 0) {
+      setStatus(panel, 'No matches');
+      return;
+    }
+
+    panel.appendChild(wrap);
+  }
+
+  async function search(widget, query) {
+    const { input, panel } = getWidgetEls(widget);
+    if (!input || !panel) return;
+
+    const q = (query || '').trim();
+    if (q.length < 2) {
+      hidePanel(panel);
+      return;
+    }
+
+    input.dataset.lastLoincQuery = q;
+    showPanel(panel);
+    setStatus(panel, 'Searching…');
+
+    const prev = abortControllers.get(input);
+    if (prev) prev.abort();
+    const controller = new AbortController();
+    abortControllers.set(input, controller);
+
+    const url = `/api/terminology/search/loinc?q=${encodeURIComponent(q)}`;
+
+    try {
+      const resp = await fetch(url, { signal: controller.signal, headers: { 'Accept': 'application/json' } });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      if (input.dataset.lastLoincQuery !== q) return;
+
+      const results = Array.isArray(data?.results) ? data.results : [];
+      if (results.length === 0) {
+        setStatus(panel, 'No matches');
+        return;
+      }
+      renderResults(panel, results);
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;
+      setStatus(panel, 'Search failed');
+    }
+  }
+
+  function scheduleSearch(widget, query) {
+    const { input } = getWidgetEls(widget);
+    if (!input) return;
+    const prev = debounceTimers.get(input);
+    if (prev) window.clearTimeout(prev);
+    const id = window.setTimeout(() => search(widget, query), 250);
+    debounceTimers.set(input, id);
+  }
+
+  document.addEventListener('input', (ev) => {
+    const target = ev.target;
+    if (!(target instanceof HTMLInputElement)) return;
+    if (!target.hasAttribute('data-loinc-input')) return;
+    const widget = closestWidget(target);
+    if (!widget) return;
+    scheduleSearch(widget, target.value);
+  }, true);
+
+  document.addEventListener('focusin', (ev) => {
+    const target = ev.target;
+    if (!(target instanceof HTMLInputElement)) return;
+    if (!target.hasAttribute('data-loinc-input')) return;
+    const widget = closestWidget(target);
+    if (!widget) return;
+
+    const { panel } = getWidgetEls(widget);
+    if (panel && !panel.classList.contains('hidden')) return;
+    if ((target.value || '').trim().length >= 2) {
+      scheduleSearch(widget, target.value);
+    }
+  }, true);
+
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key !== 'Escape') return;
+    const widget = closestWidget(ev.target);
+    if (!widget) return;
+    const { panel } = getWidgetEls(widget);
+    hidePanel(panel);
+  }, true);
+
+  document.addEventListener('click', (ev) => {
+    const target = ev.target;
+    if (!(target instanceof HTMLElement)) return;
+
+    const pickBtn = target.closest?.('button[data-loinc-pick]') ?? null;
+    if (pickBtn) {
+      const widget = closestWidget(pickBtn);
+      if (!widget) return;
+      addSelected(widget, {
+        code: pickBtn.getAttribute('data-loinc-code') || '',
+        display: pickBtn.getAttribute('data-loinc-display') || ''
+      });
+      return;
+    }
+
+    const removeBtn = target.closest?.('button[data-loinc-remove]') ?? null;
+    if (removeBtn) {
+      const widget = closestWidget(removeBtn);
+      if (!widget) return;
+      const row = removeBtn.closest('[data-loinc-selected-item]');
+      const code = row?.getAttribute?.('data-loinc-code') || '';
+      if (code) removeSelected(widget, code);
+      return;
+    }
+
+    // Click outside: hide any open panels.
+    const widget = closestWidget(target);
+    if (widget) return;
+    for (const panel of document.querySelectorAll('[data-loinc-panel]')) {
+      hidePanel(panel);
+    }
+  }, true);
+
+  // Initialize empty-state on first paint.
+  document.addEventListener('DOMContentLoaded', () => {
+    for (const widget of document.querySelectorAll('[data-loinc-multiselect]')) {
+      renderEmptyState(widget);
+    }
+  }, { once: true });
+})();
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Order Lab Tests</h1>
+</div>
+
+<div class="patient-card">
+  <div class="patient-info">
+    <dd class="text-lg font-600">
+      <input class="form-input" type="text" value="{{ patient_name }}" readonly tabindex="-1" aria-label="Patient name" style="border:0; background:transparent; padding:0; height:auto; width:100%;">
+    </dd>
+  </div>
+</div>
+
+<div class="card card-lg" style="max-width: 720px;">
+  <form method="post" action="/web/encounters/{{ encounter_id }}/order-lab">
+    <input type="hidden" name="encounter_id" value="{{ encounter_id }}">
+    <input type="hidden" name="queue_entry_id" value="{{ queue_entry_id }}">
+    <input type="hidden" name="patient_id" value="{{ patient_id }}">
+
+    <h2 class="mb-md">Select Tests</h2>
+    <div class="flex flex-col gap-sm mb-lg">
+      <label class="flex items-center gap-sm">
+        <input type="checkbox" name="test_malaria_rdt" value="1">
+        <span>Malaria RDT</span>
+      </label>
+      <label class="flex items-center gap-sm">
+        <input type="checkbox" name="test_cbc" value="1">
+        <span>Complete Blood Count (CBC)</span>
+      </label>
+      <label class="flex items-center gap-sm">
+        <input type="checkbox" name="test_urinalysis" value="1">
+        <span>Urinalysis</span>
+      </label>
+      <label class="flex items-center gap-sm">
+        <input type="checkbox" name="test_hiv_rapid" value="1">
+        <span>HIV Rapid Test</span>
+      </label>
+      <label class="flex items-center gap-sm">
+        <input type="checkbox" name="test_blood_glucose" value="1">
+        <span>Blood Glucose</span>
+      </label>
+      <label class="flex items-center gap-sm">
+        <input type="checkbox" name="test_hemoglobin" value="1">
+        <span>Hemoglobin</span>
+      </label>
+      <label class="flex items-center gap-sm">
+        <input type="checkbox" name="test_urine_pregnancy" value="1">
+        <span>Urine Pregnancy Test</span>
+      </label>
+      <label class="flex items-center gap-sm">
+        <input type="checkbox" name="test_stool_exam" value="1">
+        <span>Stool Examination</span>
+      </label>
+    </div>
+
+    <div class="form-group mb-lg">
+      <label class="form-label" for="loinc_search">Add LOINC Tests (optional)</label>
+      <div data-loinc-multiselect>
+        <div class="search-input-wrap">
+          <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+          <input id="loinc_search" class="form-input" type="search" placeholder="Search LOINC…" autocomplete="off" data-loinc-input>
+        </div>
+        <div class="card p-0 mt-sm hidden" data-loinc-panel></div>
+
+        <div class="mt-sm">
+          <div class="text-sm text-secondary mb-xs">Selected LOINC tests</div>
+          <div class="flex flex-col gap-xs" data-loinc-selected></div>
+        </div>
+
+        <div data-loinc-hidden></div>
+      </div>
+    </div>
+
+    <div class="form-group mb-md">
+      <label class="form-label" for="specimen_type">Specimen Type</label>
+      <select name="specimen_type" id="specimen_type" class="input">
+        <option value="">Not specified</option>
+        <option value="Blood">Blood</option>
+        <option value="Urine">Urine</option>
+        <option value="Stool">Stool</option>
+        <option value="Sputum">Sputum</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+
+    <div class="form-group mb-md">
+      <label class="form-label" for="priority">Priority</label>
+      <select name="priority" id="priority" class="input">
+        <option value="routine">Routine</option>
+        <option value="urgent">Urgent</option>
+        <option value="stat">STAT</option>
+      </select>
+    </div>
+
+    <div class="form-group mb-md">
+      <label class="form-label" for="notes">Clinical Notes</label>
+      <textarea name="notes" id="notes" class="input" rows="2" placeholder="Relevant clinical context for the lab"></textarea>
+    </div>
+
+    <div class="flex gap-md mt-lg">
+      <button type="submit" class="btn btn-accent">Submit Lab Order</button>
+      <a href="/web/encounters/new?queue_entry_id={{ queue_entry_id }}" class="btn btn-ghost">Back to Encounter</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

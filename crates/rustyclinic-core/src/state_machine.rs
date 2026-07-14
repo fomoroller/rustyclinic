@@ -41,7 +41,10 @@ pub trait StateMachine: Sized {
         actor: &ActorContext,
     ) -> AppResult<()> {
         let allowed = self.allowed_transitions(actor);
-        if allowed.iter().any(|t| format!("{t}") == format!("{transition}")) {
+        if allowed
+            .iter()
+            .any(|t| format!("{t}") == format!("{transition}"))
+        {
             Ok(())
         } else {
             Err(AppError::InvalidTransition {

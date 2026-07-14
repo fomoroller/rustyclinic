@@ -1,0 +1,46 @@
+<tr id="simple-row-{{ p.queue_entry_id }}">
+  <td class="tabular">{{ p.position }}</td>
+  <td><strong>{{ p.patient_name }}</strong></td>
+  <td>
+    {% if p.journey_status == "Waiting" %}
+      <span class="badge badge-waiting"><span class="badge-dot"></span>Waiting</span>
+    {% else if p.journey_status == "Triage" %}
+      <span class="badge badge-called"><span class="badge-dot"></span>Triage</span>
+    {% else if p.journey_status == "With Doctor" %}
+      <span class="badge badge-called"><span class="badge-dot"></span>With Doctor</span>
+    {% else if p.journey_status == "Lab" %}
+      <span class="badge badge-called"><span class="badge-dot"></span>Lab</span>
+    {% else if p.journey_status == "Pharmacy" %}
+      <span class="badge badge-in-service"><span class="badge-dot"></span>Pharmacy</span>
+    {% else if p.journey_status == "Billing" %}
+      <span class="badge badge-completed"><span class="badge-dot"></span>Billing</span>
+    {% else if p.journey_status == "Done" %}
+      <span class="badge badge-completed"><span class="badge-dot"></span>Done</span>
+    {% else %}
+      <span class="badge"><span class="badge-dot"></span>{{ p.journey_status }}</span>
+    {% endif %}
+  </td>
+  <td class="tabular text-secondary">
+    {% if p.journey_status == "Done" %}
+      —
+    {% else %}
+      {{ p.wait_time }}
+    {% endif %}
+  </td>
+  <td>
+    <div class="action-group">
+      <a href="/web/queue/{{ p.queue_entry_id }}/print" target="_blank" rel="noopener" class="btn btn-sm btn-ghost">Print Ticket</a>
+      {% if p.journey_status == "Waiting" %}
+        <a href="/web/encounters/triage?queue_entry_id={{ p.queue_entry_id }}" class="btn btn-sm btn-accent">Start</a>
+      {% else if p.journey_status == "Triage" %}
+        <a href="/web/encounters/triage?queue_entry_id={{ p.queue_entry_id }}" class="btn btn-sm btn-accent">Continue Triage</a>
+      {% else if p.journey_status == "With Doctor" %}
+        <a href="/web/encounters/new?queue_entry_id={{ p.queue_entry_id }}" class="btn btn-sm btn-accent">Continue</a>
+      {% else if p.journey_status == "Lab" %}
+        <a href="/web/lab" class="btn btn-sm btn-primary">Results</a>
+      {% else if p.journey_status == "Pharmacy" %}
+        <a href="/web/pharmacy" class="btn btn-sm btn-primary">Dispense</a>
+      {% endif %}
+    </div>
+  </td>
+</tr>

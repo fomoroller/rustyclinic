@@ -1,0 +1,60 @@
+{% extends "base_app.html" %}
+
+{% block title %}Queue — RustyClinic{% endblock %}
+
+{% block flash %}{% include "partials/flash.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Queue Board</h1>
+  <a href="/web/patients" class="btn btn-accent">Enqueue Patient</a>
+</div>
+
+<div class="flex gap-sm mb-lg flex-wrap">
+  <a href="/web/queue?department=all" class="btn btn-sm{% if department_filter == "all" %} btn-primary{% else %} btn-ghost{% endif %}">All</a>
+  <a href="/web/queue?department=consultation" class="btn btn-sm{% if department_filter == "consultation" %} btn-primary{% else %} btn-ghost{% endif %}">Consultation</a>
+  <a href="/web/queue?department=lab" class="btn btn-sm{% if department_filter == "lab" %} btn-primary{% else %} btn-ghost{% endif %}">Lab</a>
+  <a href="/web/queue?department=pharmacy" class="btn btn-sm{% if department_filter == "pharmacy" %} btn-primary{% else %} btn-ghost{% endif %}">Pharmacy</a>
+  <a href="/web/queue?department=billing" class="btn btn-sm{% if department_filter == "billing" %} btn-primary{% else %} btn-ghost{% endif %}">Billing</a>
+</div>
+
+<div id="board-content"
+     hx-get="/web/queue/board-content?department={{ department_filter }}"
+     hx-trigger="every 10s"
+     hx-swap="innerHTML">
+  {% include "partials/queue_stats.html" %}
+
+  {% if entries.is_empty() %}
+  <div class="empty-state">
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
+      <rect x="6" y="10" width="36" height="28" rx="4"/>
+      <path d="M6 18h36M18 26h12M20 32h8"/>
+    </svg>
+    <p>No patients in the queue today. Search for a patient to enqueue them.</p>
+    <a href="/web/patients" class="btn btn-accent">Find Patient</a>
+  </div>
+  {% else %}
+  <div class="card table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Patient</th>
+          <th>Dept</th>
+          <th>Service</th>
+          <th>Status</th>
+          <th>Wait Time</th>
+          <th>Assigned To</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in entries %}
+        {% include "partials/queue_entry_row.html" %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -14,12 +14,12 @@
 //! ```
 
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 use rustyclinic_core::error::{AppError, AppResult};
 use rustyclinic_core::state_machine::StateMachine;
 use rustyclinic_core::types::ActorContext;
+use serde::{Deserialize, Serialize};
 use std::fmt;
+use uuid::Uuid;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum QueueStatus {
@@ -79,6 +79,8 @@ pub struct QueueEntry {
     pub facility_id: Uuid,
     pub patient_id: Uuid,
     pub service_type: String,
+    pub department: String,
+    pub encounter_id: Option<Uuid>,
     pub status: QueueStatus,
     pub assigned_to: Option<Uuid>,
     pub position: u32,
@@ -107,10 +109,7 @@ impl StateMachine for QueueEntry {
                 QueueTransition::MarkNoShow,
                 QueueTransition::Cancel,
             ],
-            QueueStatus::InService => vec![
-                QueueTransition::Complete,
-                QueueTransition::Transfer,
-            ],
+            QueueStatus::InService => vec![QueueTransition::Complete, QueueTransition::Transfer],
             QueueStatus::Transferred => vec![QueueTransition::Complete],
             _ => vec![],
         }
@@ -170,6 +169,12 @@ pub trait QueueEntryRepo {
     fn create(&self, entry: &QueueEntry) -> AppResult<()>;
     fn find_by_id(&self, id: Uuid) -> AppResult<Option<QueueEntry>>;
     fn find_active_by_facility(&self, facility_id: Uuid) -> AppResult<Vec<QueueEntry>>;
+    fn find_active_by_facility_and_department(
+        &self,
+        facility_id: Uuid,
+        department: &str,
+    ) -> AppResult<Vec<QueueEntry>>;
+    fn find_by_encounter(&self, encounter_id: Uuid) -> AppResult<Vec<QueueEntry>>;
     fn update(&self, entry: &QueueEntry) -> AppResult<()>;
     fn next_position(&self, facility_id: Uuid) -> AppResult<u32>;
 }
@@ -197,6 +202,8 @@ mod tests {
             facility_id,
             patient_id,
             service_type: "consultation".to_string(),
+            department: "consultation".to_string(),
+            encounter_id: None,
             status: QueueStatus::Created,
             assigned_to: None,
             position: 1,
@@ -215,17 +222,25 @@ mod tests {
         let mut entry = new_queue_entry(actor.facility_id, new_id());
 
         // created → waiting → called → in_service → completed
-        entry.apply_transition(QueueTransition::Enqueue, &actor).expect("enqueue");
+        entry
+            .apply_transition(QueueTransition::Enqueue, &actor)
+            .expect("enqueue");
         assert_eq!(entry.status, QueueStatus::Waiting);
 
-        entry.apply_transition(QueueTransition::Call, &actor).expect("call");
+        entry
+            .apply_transition(QueueTransition::Call, &actor)
+            .expect("call");
         assert_eq!(entry.status, QueueStatus::Called);
         assert_eq!(entry.assigned_to, Some(actor.user_id));
 
-        entry.apply_transition(QueueTransition::BeginService, &actor).expect("begin");
+        entry
+            .apply_transition(QueueTransition::BeginService, &actor)
+            .expect("begin");
         assert_eq!(entry.status, QueueStatus::InService);
 
-        entry.apply_transition(QueueTransition::Complete, &actor).expect("complete");
+        entry
+            .apply_transition(QueueTransition::Complete, &actor)
+            .expect("complete");
         assert_eq!(entry.status, QueueStatus::Completed);
         assert_eq!(entry.version, 4);
     }
@@ -246,12 +261,16 @@ mod tests {
         let actor2 = test_actor();
         let mut entry = new_queue_entry(actor1.facility_id, new_id());
 
-        entry.apply_transition(QueueTransition::Enqueue, &actor1).expect("enqueue");
-        entry.apply_transition(QueueTransition::Call, &actor1).expect("first call");
+        entry
+            .apply_transition(QueueTransition::Enqueue, &actor1)
+            .expect("enqueue");
+        entry
+            .apply_transition(QueueTransition::Call, &actor1)
+            .expect("first call");
 
         // Second call should fail — patient already claimed
         let mut entry2 = entry.clone();
-        entry2.status = QueueStatus::Waiting;  // simulate racing state
+        entry2.status = QueueStatus::Waiting; // simulate racing state
         entry2.assigned_to = Some(actor1.user_id); // but assigned_to is set
         let result = entry2.apply_transition(QueueTransition::Call, &actor2);
         assert!(result.is_err());
@@ -262,9 +281,15 @@ mod tests {
         let actor = test_actor();
         let mut entry = new_queue_entry(actor.facility_id, new_id());
 
-        entry.apply_transition(QueueTransition::Enqueue, &actor).expect("enqueue");
-        entry.apply_transition(QueueTransition::Call, &actor).expect("call");
-        entry.apply_transition(QueueTransition::MarkNoShow, &actor).expect("no_show");
+        entry
+            .apply_transition(QueueTransition::Enqueue, &actor)
+            .expect("enqueue");
+        entry
+            .apply_transition(QueueTransition::Call, &actor)
+            .expect("call");
+        entry
+            .apply_transition(QueueTransition::MarkNoShow, &actor)
+            .expect("no_show");
         assert_eq!(entry.status, QueueStatus::NoShow);
     }
 
@@ -273,8 +298,12 @@ mod tests {
         let actor = test_actor();
         let mut entry = new_queue_entry(actor.facility_id, new_id());
 
-        entry.apply_transition(QueueTransition::Enqueue, &actor).expect("enqueue");
-        entry.apply_transition(QueueTransition::Cancel, &actor).expect("cancel");
+        entry
+            .apply_transition(QueueTransition::Enqueue, &actor)
+            .expect("enqueue");
+        entry
+            .apply_transition(QueueTransition::Cancel, &actor)
+            .expect("cancel");
 
         assert!(entry.allowed_transitions(&actor).is_empty());
     }

@@ -1,0 +1,76 @@
+{% extends "base_app.html" %}
+
+{% block title %}Prescribe Medications — RustyClinic{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Prescribe Medications</h1>
+</div>
+
+<div class="patient-card">
+  <div class="patient-info">
+    <dd class="text-lg font-600">{{ patient_name }}</dd>
+  </div>
+</div>
+
+<div class="card card-lg" style="max-width: 800px;">
+  <form method="post" action="/web/encounters/{{ encounter_id }}/prescribe"
+        x-data="{ items: [{ name: '', dosage: '', frequency: '', duration: '', quantity: '' }] }">
+    <input type="hidden" name="encounter_id" value="{{ encounter_id }}">
+    <input type="hidden" name="queue_entry_id" value="{{ queue_entry_id }}">
+    <input type="hidden" name="patient_id" value="{{ patient_id }}">
+
+    <h2 class="mb-md">Medications</h2>
+
+    <template x-for="(item, index) in items" :key="index">
+      <div class="flex gap-sm mb-md flex-wrap items-end">
+        <div class="form-group" style="flex: 2;">
+          <label class="form-label">Medication</label>
+          <input type="text" :name="'med_name_' + index" x-model="item.name" class="input" placeholder="e.g. Amoxicillin" required>
+        </div>
+        <div class="form-group" style="flex: 1;">
+          <label class="form-label">Dosage</label>
+          <input type="text" :name="'med_dosage_' + index" x-model="item.dosage" class="input" placeholder="e.g. 500mg">
+        </div>
+        <div class="form-group" style="flex: 1;">
+          <label class="form-label">Frequency</label>
+          <input type="text" :name="'med_frequency_' + index" x-model="item.frequency" class="input" placeholder="e.g. 3x daily">
+        </div>
+        <div class="form-group" style="flex: 1;">
+          <label class="form-label">Duration</label>
+          <input type="text" :name="'med_duration_' + index" x-model="item.duration" class="input" placeholder="e.g. 5 days">
+        </div>
+        <div class="form-group" style="flex: 0.5;">
+          <label class="form-label">Qty</label>
+          <input type="number" :name="'med_quantity_' + index" x-model="item.quantity" class="input" placeholder="15" min="1">
+        </div>
+      </div>
+    </template>
+
+    <input type="hidden" name="item_count" :value="items.length">
+
+    <button type="button" @click="items.push({ name: '', dosage: '', frequency: '', duration: '', quantity: '' })" class="btn btn-ghost btn-sm mb-lg">
+      + Add Medication
+    </button>
+
+    <div class="form-group mb-md">
+      <label class="form-label" for="priority">Priority</label>
+      <select name="priority" id="priority" class="input">
+        <option value="routine">Routine</option>
+        <option value="urgent">Urgent</option>
+        <option value="stat">STAT</option>
+      </select>
+    </div>
+
+    <div class="form-group mb-md">
+      <label class="form-label" for="notes">Prescription Notes</label>
+      <textarea name="notes" id="notes" class="input" rows="2" placeholder="Special instructions"></textarea>
+    </div>
+
+    <div class="flex gap-md mt-lg">
+      <button type="submit" class="btn btn-accent">Submit Prescription</button>
+      <a href="/web/encounters/new?queue_entry_id={{ queue_entry_id }}" class="btn btn-ghost">Back to Encounter</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

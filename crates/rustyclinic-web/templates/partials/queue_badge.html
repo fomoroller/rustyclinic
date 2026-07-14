@@ -1,0 +1,13 @@
+{% if status == "waiting" %}
+  <span class="badge badge-waiting"><span class="badge-dot"></span>Waiting</span>
+{% else if status == "called" %}
+  <span class="badge badge-called"><span class="badge-dot"></span>Called</span>
+{% else if status == "in_service" %}
+  <span class="badge badge-in-service"><span class="badge-dot"></span>In Service</span>
+{% else if status == "completed" %}
+  <span class="badge badge-completed"><span class="badge-dot"></span>Completed</span>
+{% else if status == "no_show" %}
+  <span class="badge badge-no-show"><span class="badge-dot"></span>No Show</span>
+{% else %}
+  <span class="badge badge-completed"><span class="badge-dot"></span>{{ status }}</span>
+{% endif %}

@@ -1,0 +1,43 @@
+{% if patients.is_empty() %}
+<div class="empty-state">
+  <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
+    <circle cx="24" cy="16" r="8"/><path d="M8 42a16 16 0 0132 0"/>
+  </svg>
+  <p>No patients found. Try a different search or register a new patient.</p>
+  <a href="/web/patients/register" class="btn btn-accent">Register New Patient</a>
+</div>
+{% else %}
+<div class="card table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Sex</th>
+        <th>Date of Birth</th>
+        <th>National ID</th>
+        <th>Phone</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in patients %}
+      <tr>
+        <td><strong>{{ p.family_name }}</strong>, {{ p.given_name }}</td>
+        <td>{{ p.sex }}</td>
+        <td>{{ p.date_of_birth }}</td>
+        <td>{{ p.national_id }}</td>
+        <td>{{ p.phone }}</td>
+        <td>
+          <a href="/web/patients/{{ p.id }}" class="btn btn-sm">Details</a>
+          <form method="post" action="/web/queue/enqueue" style="display:inline">
+            <input type="hidden" name="patient_id" value="{{ p.id }}">
+            <input type="hidden" name="service_type" value="consultation">
+            <button type="submit" class="btn btn-sm btn-primary">Enqueue</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}

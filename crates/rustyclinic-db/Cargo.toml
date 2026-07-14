@@ -6,6 +6,10 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 
+[features]
+default = []
+postgres = ["dep:tokio-postgres", "dep:deadpool-postgres", "dep:tokio"]
+
 [dependencies]
 anyhow.workspace = true
 chrono.workspace = true
@@ -15,10 +19,14 @@ serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true
 uuid.workspace = true
+tokio-postgres = { workspace = true, optional = true }
+deadpool-postgres = { workspace = true, optional = true }
+tokio = { workspace = true, optional = true }
 rustyclinic-auth = { path = "../rustyclinic-auth" }
 rustyclinic-core = { path = "../rustyclinic-core" }
 rustyclinic-events = { path = "../rustyclinic-events" }
 rustyclinic-identity = { path = "../rustyclinic-identity" }
+rustyclinic-billing = { path = "../rustyclinic-billing" }
 rustyclinic-clinical = { path = "../rustyclinic-clinical" }
 
 [lints]

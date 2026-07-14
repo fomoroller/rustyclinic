@@ -4,6 +4,9 @@
 //! All mutations go through rustyclinic-services.
 
 pub mod routes;
+pub mod state;
+
+pub mod middleware;
 
 pub async fn health_check() -> &'static str {
     "ok"

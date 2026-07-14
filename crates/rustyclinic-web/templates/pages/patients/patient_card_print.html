@@ -1,0 +1,51 @@
+{% extends "base_print.html" %}
+
+{% block title %}Patient Card — {{ patient_name }}{% endblock %}
+
+{% block print_actions %}
+  <a href="/web/patients/{{ patient_id }}" class="btn btn-ghost btn-sm">Back</a>
+  <a href="/web/patients" class="btn btn-ghost btn-sm">Patients</a>
+  <button type="button" class="btn btn-accent btn-sm" onclick="window.print()">Print</button>
+{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <div class="section-label">Patient card</div>
+    <h1>{{ patient_name }}</h1>
+
+    <table>
+      <tbody>
+        <tr>
+          <th scope="row">Patient ID</th>
+          <td class="tabular">{{ patient_id }}</td>
+        </tr>
+        <tr>
+          <th scope="row">National ID</th>
+          <td class="tabular">{{ national_id }}</td>
+        </tr>
+        <tr>
+          <th scope="row">Sex</th>
+          <td>{{ sex }}</td>
+        </tr>
+        <tr>
+          <th scope="row">Age</th>
+          <td>{{ age }}</td>
+        </tr>
+        <tr>
+          <th scope="row">Last visit</th>
+          <td>{{ last_visit }}</td>
+        </tr>
+        <tr>
+          <th scope="row">Active programs</th>
+          <td>
+            {% if active_programs.is_empty() %}
+              —
+            {% else %}
+              {% for program in active_programs %}{% if !loop.first %}, {% endif %}{{ program }}{% endfor %}
+            {% endif %}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

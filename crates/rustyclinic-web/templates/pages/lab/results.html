@@ -1,0 +1,67 @@
+{% extends "base_app.html" %}
+
+{% block title %}Lab Results — RustyClinic{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Lab Results Entry</h1>
+</div>
+
+<div class="patient-card">
+  <div class="patient-info">
+    <dd class="text-lg font-600">{{ patient_name }}</dd>
+    {% if !specimen_type.is_empty() %}
+    <dt>Specimen</dt><dd>{{ specimen_type }}</dd>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card card-lg" style="max-width: 800px;">
+  <form method="post" action="/web/lab/submit-results">
+    <input type="hidden" name="order_id" value="{{ order_id }}">
+    <input type="hidden" name="queue_entry_id" value="{{ queue_entry_id }}">
+
+    <table>
+      <thead>
+        <tr>
+          <th>Test</th>
+          <th>Result</th>
+          <th>Value</th>
+          <th>Ref Range</th>
+          <th>Abnormal</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in tests %}
+        <tr>
+          <td><strong>{{ t.test_name }}</strong></td>
+          <td>
+            <input type="text" name="result_{{ t.test_code }}" value="{{ t.result }}"
+                   class="input" placeholder="e.g. Positive, Negative">
+          </td>
+          <td>
+            <input type="text" name="value_{{ t.test_code }}" value="{{ t.result_value }}"
+                   class="input" placeholder="Numeric" style="width: 100px;">
+            {% if !t.unit.is_empty() %}
+            <span class="text-secondary text-sm">{{ t.unit }}</span>
+            {% endif %}
+          </td>
+          <td class="text-secondary">{{ t.reference_range }}</td>
+          <td>
+            <label class="flex items-center gap-xs">
+              <input type="checkbox" name="abnormal_{{ t.test_code }}" {% if t.is_abnormal %}checked{% endif %}>
+              <span class="text-sm">Abnormal</span>
+            </label>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="flex gap-md mt-lg">
+      <button type="submit" class="btn btn-accent">Complete Lab Order</button>
+      <a href="/web/lab" class="btn btn-ghost">Back to Lab Queue</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

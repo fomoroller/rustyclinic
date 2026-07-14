@@ -1,0 +1,299 @@
+{
+  "id": "general-encounter",
+  "version": "1.0.0",
+  "title": "General Outpatient Encounter",
+  "items": [
+    {
+      "linkId": "vitals",
+      "type": { "kind": "group" },
+      "text": "Vital Signs",
+      "required": false,
+      "readOnly": false,
+      "items": [
+        {
+          "linkId": "weight_kg",
+          "type": { "kind": "decimal" },
+          "text": "Weight (kg)",
+          "required": true,
+          "validation": [
+            {
+              "expression": {
+                "type": "op",
+                "op": "gt",
+                "left": { "type": "field", "linkId": "weight_kg" },
+                "right": { "type": "literal", "value": 0, "dataType": "decimal" }
+              },
+              "severity": "error",
+              "message": "Weight must be greater than 0"
+            },
+            {
+              "expression": {
+                "type": "op",
+                "op": "lt",
+                "left": { "type": "field", "linkId": "weight_kg" },
+                "right": { "type": "literal", "value": 300, "dataType": "decimal" }
+              },
+              "severity": "error",
+              "message": "Weight must be less than 300 kg"
+            }
+          ]
+        },
+        {
+          "linkId": "height_cm",
+          "type": { "kind": "decimal" },
+          "text": "Height (cm)",
+          "required": false,
+          "validation": [
+            {
+              "expression": {
+                "type": "op",
+                "op": "or",
+                "left": { "type": "empty", "operand": { "type": "field", "linkId": "height_cm" } },
+                "right": {
+                  "type": "op",
+                  "op": "gt",
+                  "left": { "type": "field", "linkId": "height_cm" },
+                  "right": { "type": "literal", "value": 0, "dataType": "decimal" }
+                }
+              },
+              "severity": "error",
+              "message": "Height must be greater than 0"
+            },
+            {
+              "expression": {
+                "type": "op",
+                "op": "or",
+                "left": { "type": "empty", "operand": { "type": "field", "linkId": "height_cm" } },
+                "right": {
+                  "type": "op",
+                  "op": "lt",
+                  "left": { "type": "field", "linkId": "height_cm" },
+                  "right": { "type": "literal", "value": 300, "dataType": "decimal" }
+                }
+              },
+              "severity": "error",
+              "message": "Height must be less than 300 cm"
+            }
+          ]
+        },
+        {
+          "linkId": "temperature_c",
+          "type": { "kind": "decimal" },
+          "text": "Temperature (\u00b0C)",
+          "required": false,
+          "validation": [
+            {
+              "expression": {
+                "type": "op",
+                "op": "or",
+                "left": { "type": "empty", "operand": { "type": "field", "linkId": "temperature_c" } },
+                "right": {
+                  "type": "op",
+                  "op": "ge",
+                  "left": { "type": "field", "linkId": "temperature_c" },
+                  "right": { "type": "literal", "value": 30, "dataType": "decimal" }
+                }
+              },
+              "severity": "error",
+              "message": "Temperature must be at least 30\u00b0C"
+            },
+            {
+              "expression": {
+                "type": "op",
+                "op": "or",
+                "left": { "type": "empty", "operand": { "type": "field", "linkId": "temperature_c" } },
+                "right": {
+                  "type": "op",
+                  "op": "le",
+                  "left": { "type": "field", "linkId": "temperature_c" },
+                  "right": { "type": "literal", "value": 45, "dataType": "decimal" }
+                }
+              },
+              "severity": "error",
+              "message": "Temperature must be at most 45\u00b0C"
+            }
+          ]
+        },
+        {
+          "linkId": "bp_systolic",
+          "type": { "kind": "integer" },
+          "text": "Blood Pressure \u2014 Systolic (mmHg)",
+          "required": false,
+          "validation": [
+            {
+              "expression": {
+                "type": "op",
+                "op": "or",
+                "left": { "type": "empty", "operand": { "type": "field", "linkId": "bp_systolic" } },
+                "right": {
+                  "type": "op",
+                  "op": "gt",
+                  "left": { "type": "field", "linkId": "bp_systolic" },
+                  "right": { "type": "literal", "value": 0, "dataType": "integer" }
+                }
+              },
+              "severity": "error",
+              "message": "Systolic BP must be greater than 0"
+            }
+          ]
+        },
+        {
+          "linkId": "bp_diastolic",
+          "type": { "kind": "integer" },
+          "text": "Blood Pressure \u2014 Diastolic (mmHg)",
+          "required": false,
+          "validation": [
+            {
+              "expression": {
+                "type": "op",
+                "op": "or",
+                "left": { "type": "empty", "operand": { "type": "field", "linkId": "bp_diastolic" } },
+                "right": {
+                  "type": "op",
+                  "op": "gt",
+                  "left": { "type": "field", "linkId": "bp_diastolic" },
+                  "right": { "type": "literal", "value": 0, "dataType": "integer" }
+                }
+              },
+              "severity": "error",
+              "message": "Diastolic BP must be greater than 0"
+            }
+          ]
+        },
+        {
+          "linkId": "pulse_rate",
+          "type": { "kind": "integer" },
+          "text": "Pulse Rate (bpm)",
+          "required": false,
+          "validation": [
+            {
+              "expression": {
+                "type": "op",
+                "op": "or",
+                "left": { "type": "empty", "operand": { "type": "field", "linkId": "pulse_rate" } },
+                "right": {
+                  "type": "op",
+                  "op": "gt",
+                  "left": { "type": "field", "linkId": "pulse_rate" },
+                  "right": { "type": "literal", "value": 0, "dataType": "integer" }
+                }
+              },
+              "severity": "error",
+              "message": "Pulse rate must be greater than 0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linkId": "bmi",
+      "type": { "kind": "decimal" },
+      "text": "BMI",
+      "required": false,
+      "readOnly": true,
+      "computedValue": {
+        "type": "fn",
+        "name": "bmi",
+        "args": [
+          { "type": "field", "linkId": "weight_kg" },
+          { "type": "field", "linkId": "height_cm" }
+        ]
+      }
+    },
+    {
+      "linkId": "chief_complaint",
+      "type": { "kind": "string" },
+      "text": "Chief Complaint",
+      "required": true
+    },
+    {
+      "linkId": "history_present_illness",
+      "type": { "kind": "string" },
+      "text": "History of Present Illness",
+      "required": false
+    },
+    {
+      "linkId": "physical_examination",
+      "type": { "kind": "string" },
+      "text": "Physical Examination Findings",
+      "required": false
+    },
+    {
+      "linkId": "diagnosis",
+      "type": { "kind": "group" },
+      "text": "Diagnosis",
+      "required": false,
+      "items": [
+        {
+          "linkId": "primary_diagnosis",
+          "type": {
+            "kind": "choice",
+            "options": [
+              { "value": "malaria", "label": "Malaria" },
+              { "value": "urti", "label": "URTI" },
+              { "value": "uti", "label": "UTI" },
+              { "value": "pneumonia", "label": "Pneumonia" },
+              { "value": "diarrheal_disease", "label": "Diarrheal disease" },
+              { "value": "hypertension", "label": "Hypertension" },
+              { "value": "diabetes", "label": "Diabetes" },
+              { "value": "anemia", "label": "Anemia" },
+              { "value": "skin_infection", "label": "Skin infection" },
+              { "value": "other", "label": "Other" }
+            ]
+          },
+          "text": "Primary Diagnosis",
+          "required": false
+        },
+        {
+          "linkId": "other_diagnosis",
+          "type": { "kind": "string" },
+          "text": "Other Diagnosis (specify)",
+          "required": false,
+          "enableWhen": {
+            "type": "op",
+            "op": "eq",
+            "left": { "type": "field", "linkId": "primary_diagnosis" },
+            "right": { "type": "literal", "value": "other", "dataType": "string" }
+          }
+        }
+      ]
+    },
+    {
+      "linkId": "treatment_plan",
+      "type": { "kind": "string" },
+      "text": "Treatment Plan",
+      "required": true
+    },
+    {
+      "linkId": "medications_prescribed",
+      "type": { "kind": "string" },
+      "text": "Medications Prescribed",
+      "required": false
+    },
+    {
+      "linkId": "follow_up_needed",
+      "type": { "kind": "boolean" },
+      "text": "Follow-up Needed",
+      "required": false
+    },
+    {
+      "linkId": "follow_up_date",
+      "type": { "kind": "date" },
+      "text": "Follow-up Date",
+      "required": false,
+      "enableWhen": {
+        "type": "op",
+        "op": "eq",
+        "left": { "type": "field", "linkId": "follow_up_needed" },
+        "right": { "type": "literal", "value": true, "dataType": "boolean" }
+      }
+    },
+    {
+      "linkId": "visit_notes",
+      "type": { "kind": "string" },
+      "text": "Visit Notes",
+      "required": false
+    }
+  ],
+  "mappings": []
+}

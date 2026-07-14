@@ -1,0 +1,18 @@
+<div class="flex gap-md mb-lg flex-wrap">
+  <div class="stat-card flex-1">
+    <div class="stat-value" style="color: var(--warning);">{{ waiting_count }}</div>
+    <div class="stat-label">Waiting</div>
+  </div>
+  <div class="stat-card flex-1">
+    <div class="stat-value" style="color: var(--info);">{{ in_service_count }}</div>
+    <div class="stat-label">In Service</div>
+  </div>
+  <div class="stat-card flex-1">
+    <div class="stat-value" style="color: var(--success);">{{ completed_count }}</div>
+    <div class="stat-label">Completed</div>
+  </div>
+  <div class="stat-card flex-1">
+    <div class="stat-value">{{ avg_wait }}</div>
+    <div class="stat-label">Avg Wait</div>
+  </div>
+</div>

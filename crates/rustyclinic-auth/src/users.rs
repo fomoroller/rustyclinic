@@ -24,5 +24,10 @@ pub trait UserRepo {
         &self,
         facility_id: Uuid,
         username: &str,
-    ) -> rustyclinic_core::error::AppResult<Option<(User, String)>>;
+    ) -> rustyclinic_core::error::AppResult<Option<(User, String, Option<String>)>>;
+    fn update_pin_hash(
+        &self,
+        user_id: Uuid,
+        pin_hash: &str,
+    ) -> rustyclinic_core::error::AppResult<()>;
 }

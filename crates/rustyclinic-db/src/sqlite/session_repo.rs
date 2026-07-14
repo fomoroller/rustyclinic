@@ -1,9 +1,9 @@
 //! SQLite implementation of SessionRepo.
 
 use rusqlite::Connection;
-use uuid::Uuid;
-use rustyclinic_core::error::{AppError, AppResult};
 use rustyclinic_auth::session::{Session, SessionRepo, SessionState};
+use rustyclinic_core::error::{AppError, AppResult};
+use uuid::Uuid;
 
 pub struct SqliteSessionRepo<'a> {
     conn: &'a Connection,
@@ -17,8 +17,8 @@ impl<'a> SqliteSessionRepo<'a> {
 
 impl SessionRepo for SqliteSessionRepo<'_> {
     fn create(&self, session: &Session) -> AppResult<()> {
-        let roles_json = serde_json::to_string(&session.roles)
-            .map_err(|e| AppError::Database(e.to_string()))?;
+        let roles_json =
+            serde_json::to_string(&session.roles).map_err(|e| AppError::Database(e.to_string()))?;
 
         self.conn
             .execute(
@@ -81,20 +81,24 @@ impl SessionRepo for SqliteSessionRepo<'_> {
             .map_err(|e| AppError::Database(e.to_string()))?;
 
         let rows = stmt
-            .query_map(rusqlite::params![device_id.to_string()], |row| Ok(row_to_session(row)))
+            .query_map(rusqlite::params![device_id.to_string()], |row| {
+                Ok(row_to_session(row))
+            })
             .map_err(|e| AppError::Database(e.to_string()))?;
 
         let mut sessions = Vec::new();
         for row in rows {
-            let s = row.map_err(|e| AppError::Database(e.to_string()))?
-                      .map_err(|e| AppError::Database(e.to_string()))?;
+            let s = row
+                .map_err(|e| AppError::Database(e.to_string()))?
+                .map_err(|e| AppError::Database(e.to_string()))?;
             sessions.push(s);
         }
         Ok(sessions)
     }
 
     fn count_locked_by_device(&self, device_id: Uuid) -> AppResult<u32> {
-        let count: u32 = self.conn
+        let count: u32 = self
+            .conn
             .query_row(
                 "SELECT COUNT(*) FROM sessions WHERE device_id = ?1 AND state = 'locked'",
                 rusqlite::params![device_id.to_string()],

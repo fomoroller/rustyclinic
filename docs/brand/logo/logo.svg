@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="RustyClinic">
+  <rect width="512" height="512" fill="#F8F6F4"/>
+  <rect x="189" y="74" width="134" height="134" rx="22" fill="#1E293B"/>
+  <rect x="73" y="189" width="134" height="134" rx="22" fill="#1E293B"/>
+  <rect x="189" y="306" width="134" height="134" rx="22" fill="#1E293B"/>
+  <g transform="translate(371 255) rotate(3)">
+    <rect x="-67" y="-67" width="134" height="134" rx="22" fill="#C2410C"/>
+  </g>
+</svg>

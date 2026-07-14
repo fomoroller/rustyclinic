@@ -201,7 +201,7 @@ The workspace is organized by responsibility, not by transport.
 | `rustyclinic-jobs` | Scheduler, leases, retries, heartbeats, maintenance windows, job definitions |
 | `rustyclinic-projections` | Read-model builders, projection stores, lag monitoring, rebuild tooling |
 | `rustyclinic-sync` | Operation log, snapshots, replica cursors, transport adapters, conflict queue |
-| `rustyclinic-terminology` | Terminology services, local subsets, value sets, mappings, translation |
+| `rustyclinic-terminology` | Terminology services, import pipelines, local subsets, value sets, mappings, translation, code-system search |
 | `rustyclinic-services` | Shared application-service layer for commands, queries, transactions, state machines, audit, and policy |
 
 ### Domain Crates
@@ -211,7 +211,7 @@ The workspace is organized by responsibility, not by transport.
 | `rustyclinic-programs` | Vertical programs and community workflows such as HIV, TB, ANC, IMCI, malaria, family planning, NCDs, CHW visits, and defaulter tracing |
 | `rustyclinic-billing` | Coverage, eligibility, tariffs, claims, payments, waivers, mobile money |
 | `rustyclinic-reporting` | Indicators, HMIS, DHIS2, registers, printable reports, data quality rules |
-| `rustyclinic-interop` | OpenHIE, MPI, facility registry, HL7 v2, DICOM, document exchange, migration adapters |
+| `rustyclinic-interop` | OpenHIE, MPI, facility registry, FHIR boundary APIs, HL7 v2, DICOM, document exchange, migration adapters |
 | `rustyclinic-ai` | Deterministic CDS, ONNX inference, embeddings, LLM gateways, prompt policy, MCP tool metadata |
 | `rustyclinic-research` | De-identification, cohort discovery, data-use agreements, governed exports, federated coordination |
 
@@ -299,7 +299,7 @@ Runtime packages are first-class architecture, not an afterthought.
 | Program pack | HIV, TB, malaria, ANC, child health, family planning, NCD forms and rules |
 | Payer pack | Scheme verification rules, tariffs, claim mappings, adjudication codes, exemption policies |
 | Form pack | `Questionnaire`, UI schema, skip logic, computed fields, validation rules, printable layouts, migration rules |
-| Terminology pack | Local value sets, code maps, translations, subsets of SNOMED, ICD-10, LOINC, RxNorm, WHO EML |
+| Terminology pack | Local value sets, code maps, translations, subsets of SNOMED CT, ICD-11, ICD-10, LOINC, UCUM, RxNorm, WHO EML |
 | Report pack | Indicator definitions, register layouts, DHIS2 metadata mappings, export templates |
 | Integration pack | MPI endpoint config, DHIS2 channels, SMS/USSD flows, mobile money adapters, printer/scanner profiles |
 | Model pack | ONNX models, prompt templates, safety policies, model metadata, evaluation thresholds |
@@ -391,6 +391,34 @@ Supported first-class resource families include:
 - **Documents and provenance**: `DocumentReference`, `Binary`, `Media`, `Provenance`
 
 Each deployment chooses concrete profiles through packages. Profiles constrain search parameters, required fields, terminology bindings, validation, and workflow semantics.
+
+### Terminology Strategy
+
+RustyClinic uses a layered terminology model rather than forcing one standard to do every job:
+
+- **FHIR** is the interoperability boundary and external API contract.
+- **ICD-11** is the primary diagnosis classification for reporting, billing, and national exchange where applicable.
+- **SNOMED CT** is the richer clinical semantics layer for diagnoses, symptoms, findings, procedures, and medications when a deployment needs more precise concept capture.
+- **LOINC** is the canonical coding system for observations, vitals, and laboratory tests.
+- **UCUM** is the canonical unit system for measurements and lab values.
+
+The internal domain model stays operationally focused. Code-system bindings are attached to diagnoses, observations, orders, and dispenses without making clinicians navigate raw terminology trees for every action. The UI should remain clinician-friendly, while the terminology layer provides search, validation, translation, and downstream mappings.
+
+Terminology ingestion is architecture, not a one-off script. `rustyclinic-terminology` owns:
+
+- import pipelines for official terminology releases and deployment-curated subsets
+- persisted terminology tables for concepts, designations, artifacts, and import runs
+- fast search APIs for coding-aware UI surfaces
+- mappings across clinical capture, reporting, billing, package activation, and FHIR export
+
+The default implementation path is:
+
+1. store clinician-facing labels alongside structured codings
+2. bind diagnoses to ICD-11 first, with optional SNOMED CT enrichment
+3. bind vitals, lab orders, and results to LOINC plus UCUM units
+4. expose standards-compliant resources through the FHIR boundary
+
+This keeps the hot path human-operable while making the data usable for AI, reporting, claims, and interop.
 
 ### Operational Aggregates
 
@@ -1149,7 +1177,7 @@ Every device is registered with the control plane and has a certificate-based id
 | 5 | Clinical operations | Appointments, lab and specimen flow, pharmacy dispense, immunization, referrals, admissions and bed state |
 | 6 | Billing and payer workflows | Coverage verification, tariffs, claims, waivers, payments, mobile money, claims worklists |
 | 7 | Reporting and data quality | Registers, HMIS indicators, DHIS2 export, discrepancy dashboards, monthly reporting workflows |
-| 8 | Identity and interop | Enterprise person, MPI integration, facility registry, HL7 v2, DICOM references, migration tooling |
+| 8 | Identity and interop | Enterprise person, MPI integration, facility registry, FHIR boundary hardening, terminology-backed exports, HL7 v2, DICOM references, migration tooling |
 | 9 | Deterministic intelligence and MCP | CDS rules, read-only summarization, note drafting, MCP tool contracts, confirmation and co-sign flows |
 | 10 | Research and federated features | De-identification, governed cohort discovery, research export, federated rounds |
 

@@ -9,14 +9,31 @@ repository.workspace = true
 [dependencies]
 anyhow.workspace = true
 axum.workspace = true
+chrono.workspace = true
 clap.workspace = true
 tokio.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
+uuid.workspace = true
+rusqlite.workspace = true
+sha2.workspace = true
+tar.workspace = true
 rustyclinic-api = { path = "../rustyclinic-api" }
 rustyclinic-core = { path = "../rustyclinic-core" }
 rustyclinic-db = { path = "../rustyclinic-db" }
+rustyclinic-events = { path = "../rustyclinic-events" }
+rustyclinic-interop = { path = "../rustyclinic-interop" }
+rustyclinic-mcp = { path = "../rustyclinic-mcp" }
+rustyclinic-jobs = { path = "../rustyclinic-jobs" }
+rustyclinic-packages = { path = "../rustyclinic-packages" }
+rustyclinic-projections = { path = "../rustyclinic-projections" }
 rustyclinic-services = { path = "../rustyclinic-services" }
+rustyclinic-sync = { path = "../rustyclinic-sync" }
+rustyclinic-terminology = { path = "../rustyclinic-terminology" }
+rustyclinic-web = { path = "../rustyclinic-web" }
+rustyclinic-reporting = { path = "../rustyclinic-reporting" }
+serde.workspace = true
+serde_json.workspace = true
 
 [lints]
 workspace = true

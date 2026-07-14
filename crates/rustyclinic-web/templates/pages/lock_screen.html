@@ -1,0 +1,70 @@
+{% extends "base_auth.html" %}
+
+{% block title %}Locked — RustyClinic{% endblock %}
+
+{% block auth_content %}
+<div class="text-center mb-lg">
+  <div class="avatar avatar-lg" style="margin: 0 auto 12px;">{{ initials }}</div>
+  <h1 class="auth-title">{{ display_name }}</h1>
+  <p class="auth-subtitle">Enter your PIN to unlock</p>
+</div>
+
+{% if let Some(err) = error %}
+<div class="flash flash-error mb-md">{{ err }}</div>
+{% endif %}
+
+<div x-data="pinPad()" @keydown.window="handleKeydown($event)">
+  <form method="post" action="/web/unlock" x-ref="form">
+    <input type="hidden" name="session_id" value="{{ session_id }}">
+    <input type="hidden" name="pin" x-model="pin" x-ref="pinInput">
+
+    <div class="pin-display">
+      <template x-for="i in maxLen" :key="i">
+        <div class="pin-dot" :class="pin.length >= i && 'filled'"></div>
+      </template>
+    </div>
+
+    <div class="pin-grid">
+      <template x-for="n in [1,2,3,4,5,6,7,8,9]" :key="n">
+        <button type="button" class="pin-btn" @click="addDigit(n)" x-text="n"></button>
+      </template>
+      <div></div>
+      <button type="button" class="pin-btn" @click="addDigit(0)">0</button>
+      <button type="button" class="pin-btn" @click="removeDigit()">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 4l-5 6 5 6h11a1 1 0 001-1V5a1 1 0 00-1-1H7zm3 3l4 4m0-4l-4 4"/></svg>
+      </button>
+    </div>
+  </form>
+
+  <div class="text-center mt-lg">
+    <a href="/web/login" class="text-sm text-secondary">Use password instead</a>
+  </div>
+
+  <div class="mt-lg" hx-get="/web/sessions" hx-trigger="load" hx-swap="innerHTML">
+  </div>
+</div>
+
+<script>
+function pinPad() {
+  return {
+    pin: '',
+    maxLen: 6,
+    addDigit(n) {
+      if (this.pin.length < this.maxLen) {
+        this.pin += n;
+        if (this.pin.length >= 4) {
+          this.$refs.form.submit();
+        }
+      }
+    },
+    removeDigit() {
+      this.pin = this.pin.slice(0, -1);
+    },
+    handleKeydown(e) {
+      if (e.key >= '0' && e.key <= '9') this.addDigit(parseInt(e.key));
+      else if (e.key === 'Backspace') this.removeDigit();
+    }
+  }
+}
+</script>
+{% endblock %}

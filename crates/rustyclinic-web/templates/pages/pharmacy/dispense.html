@@ -1,0 +1,57 @@
+{% extends "base_app.html" %}
+
+{% block title %}Dispense Prescription — RustyClinic{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Dispense Prescription</h1>
+</div>
+
+<div class="patient-card">
+  <div class="patient-info">
+    <dd class="text-lg font-600">{{ patient_name }}</dd>
+  </div>
+</div>
+
+<div class="card card-lg" style="max-width: 800px;">
+  <form method="post" action="/web/pharmacy/submit-dispense">
+    <input type="hidden" name="order_id" value="{{ order_id }}">
+    <input type="hidden" name="queue_entry_id" value="{{ queue_entry_id }}">
+
+    <table>
+      <thead>
+        <tr>
+          <th>Medication</th>
+          <th>Dosage</th>
+          <th>Frequency</th>
+          <th>Duration</th>
+          <th>Prescribed Qty</th>
+          <th>Dispensed Qty</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td><strong>{{ item.medication_name }}</strong></td>
+          <td>{{ item.dosage }}</td>
+          <td>{{ item.frequency }}</td>
+          <td>{{ item.duration }}</td>
+          <td class="tabular">{{ item.quantity }}</td>
+          <td>
+            <input type="number" name="dispensed_{{ item.medication_field_name }}"
+                   value="{{ item.quantity }}" min="0" max="{{ item.quantity }}"
+                   class="input" style="width: 80px;">
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="flex gap-md mt-lg">
+      <button type="submit" class="btn btn-accent">Complete Dispensing</button>
+      <a href="/web/pharmacy/{{ order_id }}/print" target="_blank" rel="noopener" class="btn btn-ghost">Print Slip</a>
+      <a href="/web/pharmacy" class="btn btn-ghost">Back to Pharmacy Queue</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

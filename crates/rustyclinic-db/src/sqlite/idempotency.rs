@@ -24,18 +24,18 @@ pub fn check_idempotency(
     match result {
         Ok((response, expires_str)) => {
             // Check if expired
-            if let Ok(expires) = chrono::DateTime::parse_from_rfc3339(&expires_str) {
-                if Utc::now() > expires.with_timezone(&Utc) {
-                    // Expired — delete and allow retry
-                    let _ = conn.execute(
-                        "DELETE FROM idempotency_records WHERE key = ?1 AND facility_id = ?2",
-                        rusqlite::params![key, facility_id.to_string()],
-                    );
-                    return Ok(None);
-                }
+            if let Ok(expires) = chrono::DateTime::parse_from_rfc3339(&expires_str)
+                && Utc::now() > expires.with_timezone(&Utc)
+            {
+                // Expired — delete and allow retry
+                let _ = conn.execute(
+                    "DELETE FROM idempotency_records WHERE key = ?1 AND facility_id = ?2",
+                    rusqlite::params![key, facility_id.to_string()],
+                );
+                return Ok(None);
             }
-            let value: serde_json::Value = serde_json::from_str(&response)
-                .map_err(|e| AppError::Database(e.to_string()))?;
+            let value: serde_json::Value =
+                serde_json::from_str(&response).map_err(|e| AppError::Database(e.to_string()))?;
             Ok(Some(value))
         }
         Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),

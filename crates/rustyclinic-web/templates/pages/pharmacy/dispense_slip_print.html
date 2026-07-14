@@ -1,0 +1,44 @@
+{% extends "base_print.html" %}
+
+{% block title %}Dispense Slip — RustyClinic{% endblock %}
+
+{% block print_actions %}
+  <a href="/web/pharmacy" class="btn btn-ghost">Back to Pharmacy</a>
+  <button type="button" class="btn btn-accent" onclick="window.print()">Print</button>
+{% endblock %}
+
+{% block content %}
+  <h1>Dispense Slip</h1>
+  <p class="text-muted">Order ID: <span class="tabular">{{ order_id }}</span></p>
+
+  <div class="card mt-lg">
+    <div class="section-label">Patient</div>
+    <div class="text-lg font-600">{{ patient_name }}</div>
+  </div>
+
+  <h2 class="mt-lg">Medications</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Medication</th>
+        <th>Dosage</th>
+        <th>Frequency</th>
+        <th>Duration</th>
+        <th>Prescribed Qty</th>
+        <th>Dispensed Qty</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td><strong>{{ item.medication_name }}</strong></td>
+        <td>{{ item.dosage }}</td>
+        <td>{{ item.frequency }}</td>
+        <td>{{ item.duration }}</td>
+        <td class="tabular">{{ item.quantity }}</td>
+        <td class="tabular">{{ item.dispensed_quantity }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base_app.html" %}
+
+{% block title %}Register Patient — RustyClinic{% endblock %}
+
+{% block flash %}{% include "partials/flash.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Register Patient</h1>
+</div>
+
+<div class="card card-lg" style="max-width: 640px;">
+  {% if let Some(err) = error %}
+  <div class="flash flash-error mb-md">{{ err }}</div>
+  {% endif %}
+
+  <form method="post" action="/web/patients/register">
+    <div class="grid grid-2 gap-md">
+      <div class="form-group">
+        <label class="form-label" for="given_name">Given name</label>
+        <input class="form-input" type="text" id="given_name" name="given_name" required autofocus>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="family_name">Family name</label>
+        <input class="form-input" type="text" id="family_name" name="family_name" required>
+      </div>
+    </div>
+
+    <div class="grid grid-2 gap-md">
+      <div class="form-group">
+        <label class="form-label" for="sex">Sex</label>
+        <select class="form-input" id="sex" name="sex" required>
+          <option value="">Select...</option>
+          <option value="female">Female</option>
+          <option value="male">Male</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="date_of_birth">Date of birth</label>
+        <input class="form-input" type="date" id="date_of_birth" name="date_of_birth">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="phone">Phone</label>
+      <input class="form-input" type="tel" id="phone" name="phone">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="address">Address</label>
+      <input class="form-input" type="text" id="address" name="address">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="national_id">National ID</label>
+      <input class="form-input" type="text" id="national_id" name="national_id">
+    </div>
+
+    <button type="submit" class="btn btn-accent mt-md">Register Patient</button>
+  </form>
+</div>
+{% endblock %}

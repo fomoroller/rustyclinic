@@ -1,12 +1,12 @@
 //! Add a patient to today's queue.
 
 use chrono::Utc;
-use uuid::Uuid;
-use rustyclinic_core::error::AppResult;
-use rustyclinic_core::types::{new_id, ActorContext};
-use rustyclinic_core::state_machine::StateMachine;
 use rustyclinic_clinical::queue::{QueueEntry, QueueEntryRepo, QueueStatus, QueueTransition};
+use rustyclinic_core::error::AppResult;
+use rustyclinic_core::state_machine::StateMachine;
+use rustyclinic_core::types::{ActorContext, new_id};
 use rustyclinic_db::sqlite::unit_of_work::UnitOfWork;
+use uuid::Uuid;
 
 /// Input for enqueuing a patient.
 pub struct EnqueuePatientInput {
@@ -30,6 +30,8 @@ pub fn execute(
         facility_id: actor.facility_id,
         patient_id: input.patient_id,
         service_type: input.service_type.clone(),
+        department: "consultation".to_string(),
+        encounter_id: None,
         status: QueueStatus::Created,
         assigned_to: None,
         position,

@@ -1,8 +1,8 @@
 //! SQLite connection management.
 
+use crate::migration;
 use anyhow::Result;
 use rusqlite::Connection;
-use crate::migration;
 
 /// Open a SQLite connection with WAL mode and run migrations.
 pub fn open_and_migrate(path: &str) -> Result<Connection> {

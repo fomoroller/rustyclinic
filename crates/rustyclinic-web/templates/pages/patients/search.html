@@ -1,0 +1,32 @@
+{% extends "base_app.html" %}
+
+{% block title %}Patients — RustyClinic{% endblock %}
+
+{% block flash %}{% include "partials/flash.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Patients</h1>
+  <a href="/web/patients/register" class="btn btn-accent">Register New Patient</a>
+</div>
+
+<div class="card mb-lg">
+  <div class="search-input-wrap">
+    <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+    <input class="form-input"
+           type="search"
+           name="q"
+           placeholder="Search by name or national ID..."
+           hx-get="/web/patients/search-results"
+           hx-trigger="input changed delay:300ms, search"
+           hx-target="#search-results"
+           hx-indicator="#search-spinner"
+           autofocus>
+  </div>
+  <div id="search-spinner" class="htmx-indicator text-center p-md text-muted">Searching...</div>
+</div>
+
+<div id="search-results">
+  {% include "partials/patient_list.html" %}
+</div>
+{% endblock %}

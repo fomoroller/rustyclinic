@@ -1,0 +1,67 @@
+<tr id="queue-row-{{ e.id }}">
+  <td class="tabular">{{ e.position }}</td>
+  <td><strong>{{ e.patient_name }}</strong></td>
+  <td>
+    {% if e.department == "lab" %}
+      <span class="badge badge-called"><span class="badge-dot"></span>Lab</span>
+    {% else if e.department == "pharmacy" %}
+      <span class="badge badge-in-service"><span class="badge-dot"></span>Pharmacy</span>
+    {% else if e.department == "billing" %}
+      <span class="badge badge-completed"><span class="badge-dot"></span>Billing</span>
+    {% else %}
+      <span class="badge"><span class="badge-dot"></span>{{ e.department }}</span>
+    {% endif %}
+  </td>
+  <td>{{ e.service_type }}</td>
+  <td>
+    {% if e.status == "waiting" %}
+      <span class="badge badge-waiting"><span class="badge-dot"></span>Waiting</span>
+    {% else if e.status == "called" %}
+      <span class="badge badge-called"><span class="badge-dot"></span>Called</span>
+    {% else if e.status == "in_service" %}
+      <span class="badge badge-in-service"><span class="badge-dot"></span>In Service</span>
+    {% else if e.status == "completed" %}
+      <span class="badge badge-completed"><span class="badge-dot"></span>Completed</span>
+    {% else if e.status == "no_show" %}
+      <span class="badge badge-no-show"><span class="badge-dot"></span>No Show</span>
+    {% else %}
+      <span class="badge badge-completed"><span class="badge-dot"></span>{{ e.status }}</span>
+    {% endif %}
+  </td>
+  <td class="tabular text-secondary">{{ e.wait_time }}</td>
+  <td>{{ e.assigned_to_name }}</td>
+  <td>
+    <div class="action-group">
+      {% if e.status == "waiting" %}
+        <a href="/web/queue/{{ e.id }}/print" target="_blank" rel="noopener" class="btn btn-sm btn-ghost">Print Ticket</a>
+        <form method="post" action="/web/queue/{{ e.id }}/transition" hx-post="/web/queue/{{ e.id }}/transition" hx-target="#queue-row-{{ e.id }}" hx-swap="outerHTML">
+          <input type="hidden" name="transition" value="call">
+          <button type="submit" class="btn btn-sm btn-primary">Call</button>
+        </form>
+      {% else if e.status == "called" %}
+        <a href="/web/queue/{{ e.id }}/print" target="_blank" rel="noopener" class="btn btn-sm btn-ghost">Print Ticket</a>
+        <form method="post" action="/web/queue/{{ e.id }}/transition" hx-post="/web/queue/{{ e.id }}/transition" hx-target="#queue-row-{{ e.id }}" hx-swap="outerHTML">
+          <input type="hidden" name="transition" value="begin_service">
+          <button type="submit" class="btn btn-sm btn-accent">Begin</button>
+        </form>
+        <form method="post" action="/web/queue/{{ e.id }}/transition" hx-post="/web/queue/{{ e.id }}/transition" hx-target="#queue-row-{{ e.id }}" hx-swap="outerHTML">
+          <input type="hidden" name="transition" value="mark_no_show">
+          <button type="submit" class="btn btn-sm btn-ghost">No Show</button>
+        </form>
+      {% else if e.status == "in_service" %}
+        <a href="/web/queue/{{ e.id }}/print" target="_blank" rel="noopener" class="btn btn-sm btn-ghost">Print Ticket</a>
+        {% if e.department == "lab" %}
+          <a href="/web/lab" class="btn btn-sm btn-accent">Lab Queue</a>
+        {% else if e.department == "pharmacy" %}
+          <a href="/web/pharmacy" class="btn btn-sm btn-accent">Pharmacy Queue</a>
+        {% else %}
+          <a href="/web/encounters/new?queue_entry_id={{ e.id }}" class="btn btn-sm btn-accent">Capture</a>
+        {% endif %}
+        <form method="post" action="/web/queue/{{ e.id }}/transition" hx-post="/web/queue/{{ e.id }}/transition" hx-target="#queue-row-{{ e.id }}" hx-swap="outerHTML">
+          <input type="hidden" name="transition" value="complete">
+          <button type="submit" class="btn btn-sm btn-primary">Complete</button>
+        </form>
+      {% endif %}
+    </div>
+  </td>
+</tr>

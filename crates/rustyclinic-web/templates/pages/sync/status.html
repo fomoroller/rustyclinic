@@ -1,0 +1,86 @@
+{% extends "base_app.html" %}
+
+{% block title %}Sync Status — RustyClinic{% endblock %}
+
+{% block flash %}{% include "partials/flash.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Sync Status</h1>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-value tabular">{{ pending_ops_count }}</div>
+    <div class="stat-label">Pending Ops</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value tabular">{{ conflict_queue_depth }}</div>
+    <div class="stat-label">Pending Conflicts</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value tabular">{{ cursor_lag }}</div>
+    <div class="stat-label">Cursor Lag</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ last_pull_at }}</div>
+    <div class="stat-label">Last Pull</div>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom: 24px;">
+  <div class="section-label">Health Summary</div>
+  <dl class="detail-grid">
+    <div>
+      <dt>Last Push</dt>
+      <dd>{{ last_push_at }}</dd>
+    </div>
+    <div>
+      <dt>Last Pull</dt>
+      <dd>{{ last_pull_at }}</dd>
+    </div>
+    <div>
+      <dt>Pending Operations</dt>
+      <dd class="tabular">{{ pending_ops_count }}</dd>
+    </div>
+    <div>
+      <dt>Cursor Lag</dt>
+      <dd class="tabular">{{ cursor_lag }}</dd>
+    </div>
+  </dl>
+</div>
+
+{% if conflicts.is_empty() %}
+<div class="empty-state">
+  <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
+    <circle cx="24" cy="24" r="18"/>
+    <path d="M16 24l6 6 10-12"/>
+  </svg>
+  <p>No pending sync conflicts. This device is ready to continue syncing.</p>
+</div>
+{% else %}
+<div class="card table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Aggregate</th>
+        <th>Conflict Type</th>
+        <th>Created</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for conflict in conflicts %}
+      <tr>
+        <td>
+          <strong>{{ conflict.aggregate_type }}</strong><br>
+          <span class="text-muted text-sm tabular">{{ conflict.aggregate_id }}</span>
+        </td>
+        <td class="text-sm">{{ conflict.conflict_type }}</td>
+        <td class="tabular">{{ conflict.created_at }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}
