@@ -27,15 +27,16 @@ Bitmap lattice: top (189,74), left (73,189), bottom (189,306), orange center (37
   needs no font at render time.
 - The first "i" of *clinic* is a dotless ı; its tittle is the mark's **orange docking
   module** (same rx ratio 22/134, same 3° rotation) at 1.30× the natural dot height.
-- The second "i" keeps its natural slate dot. **Rule: the orange tittle appears only
-  when the mark is absent** — in the lockup, all i-dots are slate because the mark
-  already carries the accent.
+- The second "i" keeps its natural slate dot. **Rule: the first "i" of *clinic*
+  always wears the orange module tittle** — in both wordmark and lockup. In the
+  lockup it deliberately echoes the mark's docking module.
 - Margins: 110 px optical ink margin left/right; text block vertically centered.
 
 ## Lockup (`lockup.svg`)
 
-Mark at 0.703× (same rects as `logo.svg`) + wordmark text (wght 740, slate dots only),
-baseline aligned so the text's ink midline sits on the mark's vertical center.
+Mark at 0.703× (same rects as `logo.svg`) + wordmark text (wght 740, orange module
+tittle on the first "i" of *clinic*, same construction as the wordmark), baseline
+aligned so the text's ink midline sits on the mark's vertical center.
 Left and right margins equal by construction.
 
 Both files are generated — regenerate with the fontTools/uharfbuzz script rather than

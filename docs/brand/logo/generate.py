@@ -169,7 +169,7 @@ GAP_MT = 115.0
 
 FSL = 240.0
 SL = FSL / upem
-shaped_lk, advl = shape("rustyclinic")       # both i's dotted, slate only
+shaped_lk, advl = shape("rustyclınic")       # dotless first i, orange tittle like the wordmark
 tbl = ink_bbox_text(shaped_lk, 0.0, 0.0, SL)
 text_x = MX + mark_ink_x1 * MSCALE + GAP_MT - tbl[0]
 ink_cy = (tbl[1] + tbl[3]) / 2
@@ -177,6 +177,13 @@ baseline_l = m_cy - ink_cy
 dl = text_paths(shaped_lk, text_x, baseline_l, SL)
 text_right = text_x + tbl[2]
 canvas_w_l = round(text_right + m_left)      # right margin == left margin
+
+side_l = dot_h * SL * 1.30
+gap_l = dot_gap * SL
+dotless_l = next((g, gx) for g, gx in shaped_lk if g in ("dotlessi", "uni0131", "idotless"))
+stem_cx_l = text_x + (dotless_l[1] + (ib[0] + ib[2]) / 2) * SL
+t_cy_l = baseline_l - xheight * SL - gap_l - side_l / 2
+tittle_l = tittle_svg(stem_cx_l, t_cy_l, side_l)
 
 mark_rects = f'''  <g transform="translate({MX} {MY}) scale({MSCALE})">
     <rect x="189" y="74" width="134" height="134" rx="22" fill="{SLATE}"/>
@@ -191,6 +198,7 @@ lockup = f'''<?xml version="1.0" encoding="UTF-8"?>
   <rect width="{canvas_w_l}" height="{CANVAS_H_L}" fill="{BG}"/>
 {mark_rects}
   <path d="{dl}" fill="{SLATE}"/>
+{tittle_l}
 </svg>
 '''
 open(f"{OUT_DIR}/lockup.svg", "w").write(lockup)
