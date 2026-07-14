@@ -16,6 +16,7 @@ This closes the Phase 5/6 gaps between service layer and UI.
 ### 1. Appointments & scheduling — L
 The one Phase 5 aggregate that doesn't exist at any layer.
 - `Appointment` aggregate + state machine (`booked → confirmed → arrived → fulfilled` plus `no_show`, `cancelled`), repo (SQLite + PG), service commands
+- Design as generic **bookable resources** (staff, rooms, equipment) so theatre lists and radiology slots later reuse this scheduler instead of growing their own (see coverage audit)
 - Agenda projection; day/week views; book/reschedule/cancel from patient detail
 - Arrival flow feeds the existing queue (`arrived` → enqueue)
 - Acceptance: book → arrive → queue → encounter round-trip in the web UI; no-show visible on the agenda
@@ -128,6 +129,29 @@ Read-only Patient + Encounter bundle today.
 - Confirmation/co-sign flow for agent-initiated writes per the agent-policy invariants
 - Deterministic CDS as package-delivered rules (drug interaction, allergy, protocol reminders) with override reason capture
 - Acceptance: an LLM agent can safely run a triage-summary workflow end-to-end against a demo clinic
+
+## Vision-level coverage audit (2026-07-14)
+
+Audited the architecture against "everything any health system needs, top to
+bottom". The right completeness test is not "is there a module for X" but
+"can a health system express X as packages without forking". By that test,
+these **platform primitives** are still missing (things packages cannot
+express today):
+
+- **eMAR / scheduled clinical tasks** — inpatient medication rounds with due/overdue semantics, missed-dose handling, and co-sign. The biggest true hospital gap; hospitals live or die on this. New aggregate; pairs naturally with M1.3 admissions.
+- **Time-series charting** — partograph (WHO Labour Care Guide), ICU vitals, fluid balance. The form engine captures points in time, not continuous observation charting; needs a charting primitive with print layouts.
+- **Imaging boundary** — integrate an OSS PACS (Orthanc) over DICOMweb; build only the order → perform → report workflow by generalizing the lab state machine. Never store or view DICOM ourselves.
+- **Blood bank** — crossmatch, unit traceability, cold chain. Regulated everywhere it exists; needs its own state machine.
+- **Supply chain beyond dispensing** — requisitions, receiving, expiry tracking, stock counts; LMIS integration (OpenLMIS). The `InventoryLedger` aggregate exists; the workflows around it do not.
+- **Civil registration events** — birth and death notification exports. Small primitive, outsized public-health value in target deployments.
+- **Agent evaluation harness** — if agents are first-class operators, certifying them is release infrastructure: a synthetic clinic plus scripted clinical scenarios that every release must pass before agents may drive. Belongs alongside M4.18.
+
+**Pure content** (packages someone must author; no new code): specialty packs
+(dental, mental health/mhGAP, eye care), IMCI/ICCM protocols, WHO EML
+formulary, national register layouts, telemedicine workflows.
+
+**Deliberately out of scope — integrate, never build:** HR/payroll/finance
+ERP, PACS storage and viewing, genomics/LIMS, biobanking.
 
 ## Explicitly parked (not scheduled)
 

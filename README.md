@@ -4,11 +4,17 @@
 
 # rustyclinic
 
-**An offline-first EMR and health platform for low-resource settings, shipped as a single Rust binary.**
+**A free, offline-first EMR for every scale of care — one Rust binary from a tablet to a hospital network.**
 
-rustyclinic is built for clinics where connectivity and power are unreliable and IT staff are scarce. It runs on a tablet, laptop, Raspberry Pi, or commodity server. Registration, consultations, queueing, dispensing, billing, and reporting all work locally with no internet connection; sync happens when connectivity returns.
+rustyclinic is a bet that one executable can serve a solo doctor with a tablet, a health post on a Raspberry Pi, a district hospital on a commodity server, and a hospital network on a cluster. Same binary, same data model, same upgrade path: a clinic that grows never has to migrate away, and a deployment that shrinks still works.
 
-Country, program, insurer, terminology, form, and report variation is delivered as signed runtime packages (`.rcpkg`) rather than code forks — one binary, many deployments.
+Three commitments underpin it:
+
+- **Offline is the default, not a failure mode.** Registration, consultations, queueing, dispensing, billing, and reporting all run locally with no internet connection; sync happens when connectivity returns. Built for places where power and connectivity are unreliable and IT staff are scarce.
+- **Variation is data, not forks.** Country programs, payer rules, forms, terminology, languages, and reports are delivered as signed runtime packages (`.rcpkg`). One binary, every deployment.
+- **AI agents are first-class operators.** Every workflow is exposed through governed interfaces (MCP) with the same permissions, audit trail, and co-sign requirements as human staff — no privileged back doors, no bolted-on assistant. As frontier models become cheap enough to run anywhere, rustyclinic is already built to be operated by them.
+
+Free forever: Apache-2.0, self-hostable end to end, no cloud dependency.
 
 > **Status: pre-release.** rustyclinic is under active development and has not been validated for production clinical use. It is not a certified medical device. Do not use it to manage real patient care yet.
 
